@@ -12,7 +12,7 @@ import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './typ
 import { db } from './services/dbService.ts';
 import { supabase } from './services/supabase.ts';
 import { APP_LOGO_URL } from './constants.ts';
-import { Database, WifiOff, AlertTriangle, CloudCheck } from 'lucide-react';
+import { Database, WifiOff, AlertTriangle, CloudCheck, RefreshCw } from 'lucide-react';
 
 const USER_KEY = 'hns_companion_user';
 
@@ -23,49 +23,60 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
-  const [cloudStatus, setCloudStatus] = useState<{ connected: boolean; message: string }>({ connected: false, message: '' });
+  const [cloudStatus, setCloudStatus] = useState<{ connected: boolean; message: string }>({ connected: false, message: 'Initializing...' });
+  const [initError, setInitError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const initApp = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const conn = await db.testConnection();
+  const initApp = async () => {
+    setIsLoading(true);
+    setInitError(null);
+    try {
+      // 1. Run core connectivity checks in parallel. 
+      // Individual catch blocks prevent a single failure from crashing the whole sequence.
+      const [sessionRes, conn] = await Promise.all([
+        supabase.auth.getSession().catch(() => ({ data: { session: null }, error: new Error('Auth unreachable') })),
+        db.testConnection()
+      ]);
+
+      const session = sessionRes.data?.session;
       setCloudStatus({ connected: conn.success, message: conn.message });
       
       if (session?.user) {
-        try {
-          const profile = await db.getUserByEmail(session.user.email!);
-          
-          const u: User = {
-            id: session.user.id,
-            email: session.user.email!,
-            name: profile?.full_name || session.user.user_metadata?.full_name || 'HNS Student',
-            role: profile?.role || 'student',
-            is_primary_admin: profile?.role === 'admin'
-          };
-          
-          setUser(u);
-          localStorage.setItem(USER_KEY, JSON.stringify(u));
+        // 2. Fetch profile and start data sync
+        const profile = await db.getUserByEmail(session.user.email!).catch(() => null);
+        
+        const u: User = {
+          id: session.user.id,
+          email: session.user.email!,
+          name: profile?.full_name || session.user.user_metadata?.full_name || 'HNS Student',
+          role: profile?.role || 'student',
+          is_primary_admin: profile?.role === 'admin'
+        };
+        
+        setUser(u);
+        localStorage.setItem(USER_KEY, JSON.stringify(u));
 
-          const [cloudSubs, cloudFiles] = await Promise.all([
-            db.getSubjects(u.id),
-            db.getFiles()
-          ]);
-          setSubjects(cloudSubs);
-          setFiles(cloudFiles);
-        } catch (e) {
-          console.error("Data load failed:", e);
-        }
+        // 3. Parallel fetch of subjects and files
+        const [cloudSubs, cloudFiles] = await Promise.all([
+          db.getSubjects(u.id).catch(() => []),
+          db.getFiles().catch(() => [])
+        ]);
+        setSubjects(cloudSubs);
+        setFiles(cloudFiles);
       } else {
         localStorage.removeItem(USER_KEY);
-        try {
-          const cloudFiles = await db.getFiles();
-          setFiles(cloudFiles);
-        } catch (e) {}
+        const cloudFiles = await db.getFiles().catch(() => []);
+        setFiles(cloudFiles);
       }
+    } catch (e: any) {
+      console.error("Initialization failed:", e);
+      setInitError(e.message || "Failed to establish secure connection.");
+      setCloudStatus({ connected: false, message: "Local Workspace Active" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      setTimeout(() => setIsLoading(false), 2000);
-    };
-
+  useEffect(() => {
     initApp();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -85,8 +96,8 @@ const App: React.FC = () => {
       localStorage.setItem(USER_KEY, JSON.stringify(u));
       setUser(u);
       const [cloudSubs, cloudFiles] = await Promise.all([
-        db.getSubjects(u.id),
-        db.getFiles()
+        db.getSubjects(u.id).catch(() => []),
+        db.getFiles().catch(() => [])
       ]);
       setSubjects(cloudSubs);
       setFiles(cloudFiles);
@@ -100,7 +111,7 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     setIsSyncing(true);
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut().catch(() => {});
       localStorage.removeItem(USER_KEY);
       sessionStorage.clear();
       setUser(null);
@@ -201,7 +212,7 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
         <div className="relative mb-12">
           <div className="absolute inset-0 bg-emerald-100 rounded-full blur-[100px] opacity-30 animate-pulse"></div>
           <div className="absolute inset-0 bg-blue-100 rounded-full blur-[120px] opacity-20 translate-x-12 translate-y-12 animate-pulse [animation-delay:1s]"></div>
@@ -209,7 +220,7 @@ const App: React.FC = () => {
           <img 
             src={APP_LOGO_URL} 
             alt="HNS Institutional Logo" 
-            className="w-40 h-40 relative z-10 object-contain drop-shadow-[0_20px_50px_rgba(16,185,129,0.3)] animate-in zoom-in-50 duration-1000" 
+            className="w-40 h-40 relative z-10 object-contain drop-shadow-[0_20px_50px_rgba(16,185,129,0.3)] animate-in zoom-in-50 duration-700" 
           />
         </div>
         
@@ -217,9 +228,18 @@ const App: React.FC = () => {
           <div className="h-full bg-emerald-600 animate-progress-loading"></div>
         </div>
         
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-4">
            <h2 className="font-poppins font-bold text-slate-900 tracking-tight text-2xl">HNS Hub</h2>
-           <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.3em] opacity-80">Connecting to Academic Core</p>
+           <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.3em] opacity-80">Synchronizing Identity...</p>
+           {initError && (
+             <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-bold border border-red-100 animate-in fade-in flex flex-col items-center gap-2">
+               <AlertTriangle size={16} />
+               <span>Network latency detected. Retrying cloud link...</span>
+               <button onClick={initApp} className="mt-2 text-emerald-600 hover:underline flex items-center gap-1">
+                 <RefreshCw size={10} /> Manual Refresh
+               </button>
+             </div>
+           )}
         </div>
       </div>
     );
@@ -250,7 +270,6 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Fix: Removed non-existent props onUpdateSubject and onReorder to match DashboardProps interface */}
         {currentView === 'dashboard' && <Dashboard subjects={subjects} onAddSubject={addSubject} onDeleteSubject={deleteSubject} onAddItem={addItemToSubject} onDeleteItem={deleteItem} onUpdateItem={updateItem} />}
         {currentView === 'library' && <Library subjects={subjects} files={files} user={user} />}
         {currentView === 'focus' && <StudyTimer subjects={subjects} onUpdateItem={updateItem} />}

@@ -6,7 +6,7 @@ import { GoogleGenAI } from "@google/genai";
  */
 export const generateStudyAdvice = async (prompt: string) => {
   if (!process.env.API_KEY) {
-    return { text: "Assistant offline. Please configure API access." };
+    return { text: "Assistant offline: Missing API Configuration. Please verify environment setup." };
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -21,9 +21,12 @@ export const generateStudyAdvice = async (prompt: string) => {
       },
     });
 
-    return { text: response.text || "I couldn't generate a response." };
-  } catch (error) {
+    return { text: response.text || "I couldn't generate a response. Neural core returned an empty frame." };
+  } catch (error: any) {
     console.error("Gemini Error:", error);
-    return { text: "Connection error. Please try again later." };
+    if (error.message?.includes('Failed to fetch')) {
+      return { text: "Network Connection Interrupted: Failed to fetch data from Gemini servers. Check your institutional network status." };
+    }
+    return { text: `Neural Link Error: ${error.message || "Unknown anomaly detected."}` };
   }
 };

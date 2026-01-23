@@ -37,8 +37,12 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
     loadHistory();
     const checkApiKey = async () => {
       if ((window as any).aistudio) {
-        const has = await (window as any).aistudio.hasSelectedApiKey();
-        setHasApiKey(has);
+        try {
+          const has = await (window as any).aistudio.hasSelectedApiKey();
+          setHasApiKey(has);
+        } catch (e) {
+          setHasApiKey(true); // Fallback for standard environments
+        }
       } else {
         setHasApiKey(true);
       }
@@ -74,6 +78,10 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
 
   const generateVideo = async () => {
     if (!prompt.trim()) return;
+    if (!process.env.API_KEY) {
+      setError("AI Key is missing. Please configure your project credentials.");
+      return;
+    }
     
     setError(null);
     setGeneratedVideoUrl(null);
@@ -101,6 +109,7 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
       const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
       
       if (downloadLink) {
+        // Log to DB first for history
         await db.saveVisualization(userId, {
           prompt,
           video_url: downloadLink,
@@ -108,11 +117,21 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
           resolution: '720p'
         });
 
-        const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        setGeneratedVideoUrl(url);
-        loadHistory();
+        try {
+          // Attempt to fetch with API key appended
+          const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+          if (!response.ok) throw new Error("File server access denied.");
+          
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          setGeneratedVideoUrl(url);
+          loadHistory();
+        } catch (fetchErr: any) {
+          console.error("Fetch error:", fetchErr);
+          // If fetch fails (CORS or network), provide the direct link as fallback if possible
+          setError("Render succeeded, but file transfer was blocked by browser security. Check your console for the direct link.");
+          setGeneratedVideoUrl(downloadLink + `&key=${process.env.API_KEY}`);
+        }
       } else {
         throw new Error("Generation complete but no media was returned.");
       }
