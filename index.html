@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>HNS Student Companion | Higher School of Renewable Energies</title>
     
-    <!-- Robust Environment Shim -->
+    <!-- Robust Environment Shim - Must be first -->
     <script>
         window.process = window.process || { env: {} };
     </script>
@@ -62,5 +62,7 @@
 </head>
 <body>
     <div id="root"></div>
+    <!-- Load the entry point file -->
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
