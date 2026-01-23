@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
-import { DOMAIN_RESTRICTION, PRIMARY_ADMIN_EMAIL, APP_LOGO_URL } from '../constants';
+import { DOMAIN_RESTRICTION, APP_LOGO_URL } from '../constants';
+import { supabase } from '../services/supabase';
 import { Lock, Mail, User as UserIcon, AlertCircle, ArrowRight, UserPlus, LogIn, Globe } from 'lucide-react';
 
 interface AuthProps {
@@ -9,7 +10,7 @@ interface AuthProps {
   adminEmails: string[];
 }
 
-const Auth: React.FC<AuthProps> = ({ onLogin, adminEmails }) => {
+const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -17,7 +18,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, adminEmails }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
@@ -28,58 +29,51 @@ const Auth: React.FC<AuthProps> = ({ onLogin, adminEmails }) => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      setIsLoading(false);
-      return;
-    }
-
-    setTimeout(() => {
-      const usersDB = JSON.parse(localStorage.getItem('hns_users_db') || '[]');
-      
+    try {
       if (mode === 'register') {
-        const existing = usersDB.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
-        if (existing) {
-          setError('This email is already registered. Please sign in.');
-          setIsLoading(false);
-          return;
-        }
-
-        const newUserRecord = {
-          id: Math.random().toString(36).substr(2, 9),
-          email: email.toLowerCase(),
-          name: name || email.split('@')[0],
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
           password,
-        };
+          options: {
+            data: { full_name: name }
+          }
+        });
 
-        localStorage.setItem('hns_users_db', JSON.stringify([...usersDB, newUserRecord]));
-        completeLogin(newUserRecord);
-      } else {
-        const found = usersDB.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
-        if (!found || found.password !== password) {
-          setError('Invalid email or password. Please try again.');
-          setIsLoading(false);
-          return;
+        if (signUpError) throw signUpError;
+        if (data.user) {
+          setError("Registration successful! Please check your email for verification if enabled, or try logging in.");
+          setMode('login');
         }
-        completeLogin(found);
+      } else {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) throw signInError;
+        
+        if (data.user) {
+          // Fetch profile for role info
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+
+          onLogin({
+            id: data.user.id,
+            email: data.user.email || email,
+            name: profile?.full_name || name || email.split('@')[0],
+            role: profile?.role || 'student',
+            isPrimary: profile?.is_primary_admin || false
+          });
+        }
       }
-    }, 800);
-  };
-
-  const completeLogin = (userRecord: any) => {
-    const isPrimary = userRecord.email.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase();
-    const isSecondaryAdmin = adminEmails.some(ae => ae.toLowerCase() === userRecord.email.toLowerCase());
-    
-    let userRole: 'student' | 'admin' = (isPrimary || isSecondaryAdmin) ? 'admin' : 'student';
-
-    onLogin({
-      id: userRecord.id,
-      email: userRecord.email,
-      name: isPrimary ? 'Abdelhak Guehmam' : userRecord.name,
-      role: userRole,
-      isPrimary
-    });
-    setIsLoading(false);
+    } catch (err: any) {
+      setError(err.message || "Authentication failed.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -93,9 +87,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin, adminEmails }) => {
               src={APP_LOGO_URL} 
               alt="HNS RE2SD Logo" 
               className="w-28 h-28 object-contain animate-in fade-in zoom-in duration-1000"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://api.dicebear.com/7.x/initials/svg?seed=HNS&backgroundColor=10b981';
-              }}
             />
           </div>
           <h1 className="text-3xl font-poppins font-bold text-slate-800 tracking-tight">HNS Companion</h1>
@@ -168,7 +159,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, adminEmails }) => {
             {error && (
               <div className="p-4 bg-red-50 text-red-600 text-[11px] font-bold rounded-2xl flex items-center gap-3 border border-red-100 animate-in shake duration-300">
                 <AlertCircle size={16} />
-                {error}
+                <span className="flex-1">{error}</span>
               </div>
             )}
 
@@ -181,7 +172,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, adminEmails }) => {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
                 <>
-                  {mode === 'login' ? 'Unlock Dashboard' : 'Create My Profile'}
+                  {mode === 'login' ? 'Unlock Dashboard' : 'Join HNS Hub'}
                   <ArrowRight size={20} />
                 </>
               )}
@@ -197,12 +188,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin, adminEmails }) => {
               </p>
             </div>
           </form>
-        </div>
-        
-        <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-            Higher School of Renewable Energies
-          </p>
         </div>
       </div>
     </div>

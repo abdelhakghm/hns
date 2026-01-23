@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { generateStudyAdvice } from '../services/geminiService';
-import { Send, User as UserIcon, Bot, Sparkles, Loader2, Info } from 'lucide-react';
+import { Send, User as UserIcon, Bot, Sparkles, Loader2, Info, AlertTriangle, ExternalLink, Settings } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -16,17 +16,22 @@ const Chatbot: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Check if API key is configured
+  const isApiKeyMissing = !process.env.API_KEY || process.env.API_KEY === '';
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!isApiKeyMissing) {
+      scrollToBottom();
+    }
+  }, [messages, isApiKeyMissing]);
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isApiKeyMissing) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -38,6 +43,45 @@ const Chatbot: React.FC = () => {
     setMessages(prev => [...prev, { role: 'assistant', content: response || 'Sorry, I missed that.' }]);
     setIsLoading(false);
   };
+
+  if (isApiKeyMissing) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)] max-w-4xl mx-auto bg-white rounded-[40px] border border-slate-200 shadow-sm overflow-hidden items-center justify-center p-8 text-center">
+        <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mb-6 animate-pulse">
+          <AlertTriangle size={48} />
+        </div>
+        <h2 className="text-2xl font-poppins font-bold text-slate-800">AI Configuration Required</h2>
+        <p className="text-slate-500 mt-4 max-w-md mx-auto leading-relaxed">
+          The HNS Assistant uses Google Gemini to provide academic support. To enable this feature, the administrator needs to add the API Key to the environment variables.
+        </p>
+        
+        <div className="mt-8 p-6 bg-slate-50 rounded-[32px] border border-slate-100 text-left w-full max-w-sm">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <Settings size={14} />
+            Setup Instructions
+          </h3>
+          <ol className="space-y-3">
+            <li className="flex gap-3 text-sm text-slate-600">
+              <span className="flex-shrink-0 w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-[10px] font-bold">1</span>
+              <span>Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline inline-flex items-center gap-1">AI Studio <ExternalLink size={12} /></a></span>
+            </li>
+            <li className="flex gap-3 text-sm text-slate-600">
+              <span className="flex-shrink-0 w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-[10px] font-bold">2</span>
+              <span>Go to Vercel Project Settings</span>
+            </li>
+            <li className="flex gap-3 text-sm text-slate-600">
+              <span className="flex-shrink-0 w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-[10px] font-bold">3</span>
+              <span>Add <code className="bg-white px-1.5 py-0.5 border border-slate-200 rounded text-emerald-700 font-mono">API_KEY</code> variable</span>
+            </li>
+          </ol>
+        </div>
+
+        <p className="mt-8 text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+          Rest of the app remains fully functional
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)] max-w-4xl mx-auto bg-white rounded-[40px] border border-slate-200 shadow-sm overflow-hidden">
