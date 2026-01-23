@@ -1,0 +1,7 @@
+{
+  "name": "HNS Student Companion",
+  "description": "A comprehensive academic management and focus application for students of the Higher School of Renewable Energies (HNS), featuring progress tracking, focus timers, and an AI-powered educational assistant.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
