@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import Auth from './components/Auth';
-import Layout from './components/Layout';
-import Dashboard from './components/Dashboard';
-import Library from './components/Library';
-import StudyTimer from './components/StudyTimer';
-import Chatbot from './components/Chatbot';
-import AdminPanel from './components/AdminPanel';
-import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types';
-import { INITIAL_SUBJECTS, INITIAL_FILES } from './constants';
-import { supabase, isSupabaseConfigured } from './services/supabase';
+import Auth from './components/Auth.tsx';
+import Layout from './components/Layout.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import Library from './components/Library.tsx';
+import StudyTimer from './components/StudyTimer.tsx';
+import Chatbot from './components/Chatbot.tsx';
+import AdminPanel from './components/AdminPanel.tsx';
+import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types.ts';
+import { INITIAL_SUBJECTS, INITIAL_FILES } from './constants.ts';
+import { supabase, isSupabaseConfigured } from './services/supabase.ts';
 
 const STORAGE_KEY = 'hns_companion_data';
 
@@ -20,7 +20,6 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
 
-  // Load data from LocalStorage if in Local Mode
   const loadLocalData = () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -41,11 +40,9 @@ const App: React.FC = () => {
     }
   };
 
-  // Initialize Session
   useEffect(() => {
     const initSession = async () => {
       if (!isSupabaseConfigured) {
-        // Mock a user for local mode so the dashboard is accessible
         setUser({
           id: 'local-user',
           email: 'student@hns-re2sd.dz',
@@ -59,7 +56,6 @@ const App: React.FC = () => {
 
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
         if (sessionError) throw sessionError;
 
         if (session?.user) {
@@ -78,6 +74,8 @@ const App: React.FC = () => {
           };
           setUser(userData);
           fetchUserData(userData.id);
+        } else {
+          loadLocalData();
         }
         fetchGlobalResources();
       } catch (err) {

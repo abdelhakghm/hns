@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { generateStudyAdvice } from '../services/geminiService';
+import { generateStudyAdvice } from '../services/geminiService.ts';
 import { Send, User as UserIcon, Bot, Sparkles, Loader2, Info, AlertTriangle, ExternalLink, Settings } from 'lucide-react';
 
 interface Message {
@@ -16,7 +16,6 @@ const Chatbot: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Check if API key is configured
   const isApiKeyMissing = !process.env.API_KEY || process.env.API_KEY === '';
 
   const scrollToBottom = () => {
@@ -85,7 +84,6 @@ const Chatbot: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)] max-w-4xl mx-auto bg-white rounded-[40px] border border-slate-200 shadow-sm overflow-hidden">
-      {/* Header */}
       <div className="bg-emerald-600 p-6 flex items-center justify-between text-white">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
@@ -104,7 +102,6 @@ const Chatbot: React.FC = () => {
         </button>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
@@ -143,7 +140,6 @@ const Chatbot: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <div className="p-6 bg-white border-t border-slate-100">
         <form onSubmit={handleSend} className="flex gap-3">
           <input
