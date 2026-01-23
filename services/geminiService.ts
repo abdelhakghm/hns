@@ -5,11 +5,16 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
  * Generates study advice using Gemini 3 Flash model.
  */
 export const generateStudyAdvice = async (prompt: string): Promise<string> => {
-  const apiKey = process.env.API_KEY;
+  let apiKey = '';
+  try {
+    apiKey = (process?.env?.API_KEY as string) || '';
+  } catch (e) {
+    apiKey = '';
+  }
   
   if (!apiKey) {
-    console.error("HNS Assistant Error: Gemini API Key is missing. Please set it in Vercel Environment Variables.");
-    return "The HNS Assistant is currently offline. (Admin: Please configure the API Key in Vercel).";
+    console.error("HNS Assistant Error: Gemini API Key is missing.");
+    return "The HNS Assistant is currently offline. (Admin: Please configure the API_KEY in Vercel).";
   }
 
   const ai = new GoogleGenAI({ apiKey });

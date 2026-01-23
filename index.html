@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>HNS Student Companion | Higher School of Renewable Energies</title>
     
+    <!-- Environment Shim -->
+    <script>
+        // Ensure process.env exists for libraries that expect it
+        window.process = window.process || { env: {} };
+    </script>
+
     <!-- Primary Meta Tags -->
     <meta name="title" content="HNS Student Companion">
     <meta name="description" content="The official academic tracking and focus tool for students of the Higher School of Renewable Energies (HNS).">
