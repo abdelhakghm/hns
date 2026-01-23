@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import Auth from './components/Auth.tsx';
-import Layout from './components/Layout.tsx';
-import Dashboard from './components/Dashboard.tsx';
-import Library from './components/Library.tsx';
-import StudyTimer from './components/StudyTimer.tsx';
-import Chatbot from './components/Chatbot.tsx';
-import AdminPanel from './components/AdminPanel.tsx';
-import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types.ts';
-import { INITIAL_SUBJECTS, INITIAL_FILES } from './constants.ts';
-import { supabase, isSupabaseConfigured } from './services/supabase.ts';
+import Auth from './components/Auth';
+import Layout from './components/Layout';
+import Dashboard from './components/Dashboard';
+import Library from './components/Library';
+import StudyTimer from './components/StudyTimer';
+import Chatbot from './components/Chatbot';
+import AdminPanel from './components/AdminPanel';
+import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types';
+import { INITIAL_SUBJECTS, INITIAL_FILES } from './constants';
+import { supabase, isSupabaseConfigured } from './services/supabase';
 
 const STORAGE_KEY = 'hns_companion_data';
 
@@ -197,6 +197,7 @@ const App: React.FC = () => {
         : (updates.exercisesSolved !== undefined ? updates.exercisesSolved : itemToUpdate.exercisesSolved);
       const newStatus = updates.status || (newExercisesSolved >= itemToUpdate.totalExercises ? 'completed' : itemToUpdate.status);
       await supabase.from('study_items').update({ exercises_solved: newExercisesSolved, status: newStatus }).eq('id', itemId);
+      // Fixed: Property 'exercises_added' does not exist on type 'Omit<StudyLog, "id">'. Did you mean 'exercisesAdded'?
       if (logEntry) await supabase.from('study_logs').insert({ item_id: itemId, note: logEntry.note, exercises_added: logEntry.exercisesAdded || 0 });
       fetchUserData(user.id);
     } else {
@@ -258,7 +259,7 @@ const App: React.FC = () => {
             onAddItem={addItemToSubject}
             onDeleteItem={async (subId, itemId) => {
               if (isSupabaseConfigured) await supabase.from('study_items').delete().eq('id', itemId);
-              const updated = subjects.map(s => s.id === subId ? { ...s, items: s.items.filter(i => i.id !== itemId) } : s);
+              const updated = subjects.map(s => subId === subId ? { ...s, items: s.items.filter(i => i.id !== itemId) } : s);
               setSubjects(updated); saveLocalData(updated);
             }}
             onUpdateItem={updateItemProgress}
