@@ -1,6 +1,9 @@
 
-// This file is deprecated. HNS Student Companion now uses a Local-First architecture
-// with direct Neon PostgreSQL integration instructions in the Admin Panel.
-export const isSupabaseConfigured = false;
-export const hasInvalidKeyConfiguration = false;
-export const supabase = null;
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = 'https://fvpbpufevbmpbekxgjzi.supabase.co';
+const supabaseAnonKey = 'sb_publishable_Fv0lSfiKj8aH5xc50fmhEg_kTj2PsIE';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;

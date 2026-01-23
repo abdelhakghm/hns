@@ -54,4 +54,4 @@ export interface FileResource {
   fileName?: string;
 }
 
-export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'admin' | 'vision';
+export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'admin';

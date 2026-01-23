@@ -9,8 +9,7 @@ import {
   MessageSquare, 
   LogOut,
   ChevronRight,
-  ShieldCheck,
-  Video
+  ShieldCheck
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -29,7 +28,6 @@ const Layout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogout,
     { id: 'library', label: 'Academic Files', icon: LibraryIcon },
     { id: 'focus', label: 'Study Focus', icon: Timer },
     { id: 'chat', label: 'HNS Assistant', icon: MessageSquare },
-    { id: 'vision', label: 'Vision Lab', icon: Video },
   ];
 
   if (user.role === 'admin') {

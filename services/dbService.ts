@@ -1,22 +1,12 @@
 
-import { neon } from '@neondatabase/serverless';
+import { supabase } from './supabase.ts';
 import { User, Subject, StudyItem, FileResource } from '../types';
 
 const LOCAL_STORAGE_KEY = 'hns_local_db';
 
-// Hardcoded Production Database URL as requested by the user
-const PROD_DATABASE_URL = "postgresql://neondb_owner:npg_FIiPt1c3KxJu@ep-green-night-ahb3y6ir-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-
-const getDbUrl = () => {
-  const envUrl = process.env.DATABASE_URL;
-  if (envUrl && !envUrl.includes('placeholder')) {
-    return envUrl;
-  }
-  return PROD_DATABASE_URL;
-};
-
 const getLocalDb = () => {
   const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+  // Added visualizations to the default local DB structure
   return data ? JSON.parse(data) : { profiles: [], subjects: [], items: [], logs: [], files: [], chat: [], visualizations: [] };
 };
 
@@ -24,27 +14,14 @@ const saveLocalDb = (data: any) => {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
 };
 
-const sql = () => {
-  const url = getDbUrl();
-  try {
-    return neon(url);
-  } catch (e) {
-    console.error("Neon Connection Error:", e);
-    return null;
-  }
-};
-
 export const db = {
   isCloudEnabled: () => true,
-  
-  getCloudUrl: () => getDbUrl(),
-  
+
   async testConnection() {
-    const query = sql();
-    if (!query) return { success: false, message: "Connection parameters invalid" };
     try {
-      await query`SELECT 1`;
-      return { success: true, message: "HNS Cloud Active" };
+      const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+      if (error) throw error;
+      return { success: true, message: "HNS Supabase Active" };
     } catch (e: any) {
       console.error("Connection test failed:", e);
       return { success: false, message: "Cloud Offline - Fallback Active" };
@@ -52,16 +29,18 @@ export const db = {
   },
 
   async getUserByEmail(email: string) {
-    const query = sql();
     const institutionalEmail = email.toLowerCase().trim();
     
-    if (query) {
-      try {
-        const result = await query`SELECT * FROM public.profiles WHERE email = ${institutionalEmail}`;
-        if (result[0]) return result[0];
-      } catch (e) {
-        console.warn("Cloud query failed for getUserByEmail:", e);
-      }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', institutionalEmail)
+        .single();
+      
+      if (data) return data;
+    } catch (e) {
+      console.warn("Cloud query failed for getUserByEmail:", e);
     }
     
     const local = getLocalDb();
@@ -69,20 +48,25 @@ export const db = {
   },
 
   async createProfile(data: { email: string; name: string; password_hash: string; salt: string; role: string }) {
-    const query = sql();
     let profile = null;
 
-    if (query) {
-      try {
-        const result = await query`
-          INSERT INTO public.profiles (email, full_name, password_hash, salt, role)
-          VALUES (${data.email.toLowerCase()}, ${data.name}, ${data.password_hash}, ${data.salt}, ${data.role})
-          RETURNING id, email, full_name, role
-        `;
-        profile = result[0];
-      } catch (e) {
-        console.error("CRITICAL: Cloud profile creation failed. This usually means the 'profiles' table is missing columns like 'password_hash' or 'salt'. Run the migration in Admin Panel > System.", e);
-      }
+    try {
+      const { data: result, error } = await supabase
+        .from('profiles')
+        .insert({
+          email: data.email.toLowerCase(),
+          full_name: data.name,
+          password_hash: data.password_hash,
+          salt: data.salt,
+          role: data.role
+        })
+        .select()
+        .single();
+      
+      if (result) profile = result;
+      if (error) throw error;
+    } catch (e) {
+      console.error("Cloud profile creation failed:", e);
     }
 
     if (!profile) {
@@ -103,21 +87,24 @@ export const db = {
   },
 
   async getSubjects(userId: string): Promise<Subject[]> {
-    const query = sql();
-    if (query) {
-      try {
-        const subjects = await query`SELECT * FROM public.subjects WHERE user_id = ${userId}::uuid ORDER BY created_at DESC`;
-        const items = await query`
-          SELECT i.* FROM public.study_items i
-          JOIN public.subjects s ON s.id = i.subject_id
-          WHERE s.user_id = ${userId}::uuid
-        `;
+    try {
+      const { data: subjects, error: sError } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
+      const { data: items, error: iError } = await supabase
+        .from('study_items')
+        .select('*')
+        .in('subject_id', subjects?.map(s => s.id) || []);
+
+      if (subjects) {
         return subjects.map(s => ({
           id: s.id,
           name: s.name,
           category: s.category,
-          items: items
+          items: (items || [])
             .filter(i => i.subject_id === s.id)
             .map(i => ({
               id: i.id,
@@ -130,9 +117,9 @@ export const db = {
               logs: []
             }))
         }));
-      } catch (e) {
-        console.warn("Cloud fetch failed for subjects:", e);
       }
+    } catch (e) {
+      console.warn("Cloud fetch failed for subjects:", e);
     }
 
     const local = getLocalDb();
@@ -148,18 +135,16 @@ export const db = {
   },
 
   async createSubject(userId: string, name: string, category: string): Promise<string> {
-    const query = sql();
-    if (query) {
-      try {
-        const result = await query`
-          INSERT INTO public.subjects (user_id, name, category)
-          VALUES (${userId}::uuid, ${name}, ${category})
-          RETURNING id
-        `;
-        return result[0].id;
-      } catch (e) {
-        console.error("Cloud subject creation failed. If the user profile creation failed earlier, this foreign key constraint will always fail.", e);
-      }
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .insert({ user_id: userId, name, category })
+        .select('id')
+        .single();
+      
+      if (data) return data.id;
+    } catch (e) {
+      console.error("Cloud subject creation failed:", e);
     }
 
     const local = getLocalDb();
@@ -170,12 +155,9 @@ export const db = {
   },
 
   async deleteSubject(id: string) {
-    const query = sql();
-    if (query) {
-      try {
-        await query`DELETE FROM public.subjects WHERE id = ${id}::uuid`;
-      } catch (e) {}
-    }
+    try {
+      await supabase.from('subjects').delete().eq('id', id);
+    } catch (e) {}
     const local = getLocalDb();
     local.subjects = local.subjects.filter((s: any) => s.id !== id);
     local.items = local.items.filter((i: any) => i.subject_id !== id);
@@ -183,17 +165,22 @@ export const db = {
   },
 
   async createItem(subjectId: string, item: any): Promise<string> {
-    const query = sql();
-    if (query) {
-      try {
-        const result = await query`
-          INSERT INTO public.study_items (subject_id, title, type, status, exercises_solved, total_exercises)
-          VALUES (${subjectId}::uuid, ${item.title}, ${item.type}, ${item.status}, ${item.exercisesSolved}, ${item.totalExercises})
-          RETURNING id
-        `;
-        return result[0].id;
-      } catch (e) {}
-    }
+    try {
+      const { data, error } = await supabase
+        .from('study_items')
+        .insert({
+          subject_id: subjectId,
+          title: item.title,
+          type: item.type,
+          status: item.status,
+          exercises_solved: item.exercisesSolved,
+          total_exercises: item.totalExercises
+        })
+        .select('id')
+        .single();
+      
+      if (data) return data.id;
+    } catch (e) {}
 
     const local = getLocalDb();
     const id = window.crypto.randomUUID();
@@ -203,7 +190,7 @@ export const db = {
       title: item.title, 
       type: item.type, 
       status: item.status, 
-      exercises_solved: item.exercises_solved, 
+      exercises_solved: item.exercisesSolved, 
       total_exercises: item.totalExercises 
     });
     saveLocalDb(local);
@@ -211,30 +198,24 @@ export const db = {
   },
 
   async deleteItem(itemId: string) {
-    const query = sql();
-    if (query) {
-      try {
-        await query`DELETE FROM public.study_items WHERE id = ${itemId}::uuid`;
-      } catch (e) {}
-    }
+    try {
+      await supabase.from('study_items').delete().eq('id', itemId);
+    } catch (e) {}
     const local = getLocalDb();
     local.items = local.items.filter((i: any) => i.id !== itemId);
     saveLocalDb(local);
   },
 
   async updateItem(itemId: string, updates: any) {
-    const query = sql();
-    if (query) {
-      try {
-        await query`
-          UPDATE public.study_items 
-          SET 
-            exercises_solved = COALESCE(${updates.exercisesSolved}, exercises_solved),
-            status = COALESCE(${updates.status}, status)
-          WHERE id = ${itemId}::uuid
-        `;
-      } catch (e) {}
-    }
+    try {
+      await supabase
+        .from('study_items')
+        .update({
+          exercises_solved: updates.exercisesSolved,
+          status: updates.status
+        })
+        .eq('id', itemId);
+    } catch (e) {}
     const local = getLocalDb();
     local.items = local.items.map((i: any) => {
       if (i.id === itemId) {
@@ -250,16 +231,17 @@ export const db = {
   },
 
   async createLog(itemId: string, log: any) {
-    const query = sql();
-    if (query) {
-      try {
-        await query`
-          INSERT INTO public.study_logs (item_id, note, exercises_added, timestamp)
-          VALUES (${itemId}::uuid, ${log.note}, ${log.exercisesAdded || 0}, ${log.timestamp})
-        `;
-      } catch (e) {
-        console.error("Cloud log creation failed:", e);
-      }
+    try {
+      await supabase
+        .from('study_logs')
+        .insert({
+          item_id: itemId,
+          note: log.note,
+          exercises_added: log.exercisesAdded || 0,
+          timestamp: log.timestamp
+        });
+    } catch (e) {
+      console.error("Cloud log creation failed:", e);
     }
     const local = getLocalDb();
     local.logs.push({ id: window.crypto.randomUUID(), item_id: itemId, ...log });
@@ -267,135 +249,140 @@ export const db = {
   },
 
   async getLogs(itemId: string): Promise<any[]> {
-    const query = sql();
-    if (query) {
-      try {
-        const result = await query`SELECT * FROM public.study_logs WHERE item_id = ${itemId}::uuid ORDER BY timestamp DESC`;
-        return result.map(r => ({
+    try {
+      const { data, error } = await supabase
+        .from('study_logs')
+        .select('*')
+        .eq('item_id', itemId)
+        .order('timestamp', { ascending: false });
+      
+      if (data) {
+        return data.map(r => ({
           id: r.id,
           timestamp: r.timestamp,
           note: r.note,
           exercisesAdded: r.exercises_added
         }));
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
     const local = getLocalDb();
     return local.logs.filter((l: any) => l.item_id === itemId);
   },
 
   async getFiles(): Promise<FileResource[]> {
-    const query = sql();
-    if (query) {
-      try {
-        const result = await query`SELECT * FROM public.file_resources ORDER BY date_added DESC`;
-        return result.map(r => ({
+    try {
+      const { data, error } = await supabase
+        .from('file_resources')
+        .select('*')
+        .order('date_added', { ascending: false });
+      
+      if (data) {
+        return data.map(r => ({
           id: r.id,
           title: r.title,
           description: r.description || '',
           category: r.category,
-          tags: [],
+          tags: r.tags || [],
           url: r.url,
           dateAdded: new Date(r.date_added).toLocaleDateString()
         }));
-      } catch(e) {}
-    }
+      }
+    } catch(e) {}
     const local = getLocalDb();
     return local.files;
   },
 
   async createFile(file: any) {
-    const query = sql();
-    if (query) {
-      try {
-        await query`
-          INSERT INTO public.file_resources (title, description, category, tags, url, file_name)
-          VALUES (${file.title}, ${file.description}, ${file.category}, ${file.tags || []}, ${file.url}, ${file.fileName})
-        `;
-      } catch (e) {}
-    }
+    try {
+      await supabase
+        .from('file_resources')
+        .insert({
+          title: file.title,
+          description: file.description,
+          category: file.category,
+          tags: file.tags || [],
+          url: file.url,
+          file_name: file.fileName
+        });
+    } catch (e) {}
     const local = getLocalDb();
     local.files.push({ id: window.crypto.randomUUID(), ...file, dateAdded: new Date().toISOString() });
     saveLocalDb(local);
   },
 
   async deleteFile(id: string) {
-    const query = sql();
-    if (query) {
-      try {
-        await query`DELETE FROM public.file_resources WHERE id = ${id}::uuid`;
-      } catch (e) {}
-    }
+    try {
+      await supabase.from('file_resources').delete().eq('id', id);
+    } catch (e) {}
     const local = getLocalDb();
     local.files = local.files.filter((f: any) => f.id !== id);
     saveLocalDb(local);
   },
 
   async getChatHistory(userId: string) {
-    const query = sql();
-    if (query) {
-      try {
-        const result = await query`SELECT role, content FROM public.chat_history WHERE user_id = ${userId}::uuid ORDER BY created_at ASC`;
-        return result;
-      } catch(e) {}
-    }
+    try {
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('role, content')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+      
+      if (data) return data;
+    } catch(e) {}
     const local = getLocalDb();
     return local.chat.filter((c: any) => c.user_id === userId);
   },
 
   async saveChatMessage(userId: string, role: string, content: string) {
-    const query = sql();
-    if (query) {
-      try {
-        await query`
-          INSERT INTO public.chat_history (user_id, role, content)
-          VALUES (${userId}::uuid, ${role}, ${content})
-        `;
-      } catch (e) {}
-    }
+    try {
+      await supabase
+        .from('chat_history')
+        .insert({ user_id: userId, role, content });
+    } catch (e) {}
     const local = getLocalDb();
     local.chat.push({ user_id: userId, role, content, created_at: new Date().toISOString() });
     saveLocalDb(local);
   },
 
-  /**
-   * Fetches video visualization history for a user.
-   */
+  // Fix: Added getVisualizations for VisionGenerator support
   async getVisualizations(userId: string): Promise<any[]> {
-    const query = sql();
-    if (query) {
-      try {
-        const result = await query`SELECT * FROM public.visualizations WHERE user_id = ${userId}::uuid ORDER BY created_at DESC`;
-        return result;
-      } catch (e) {
-        console.warn("Cloud fetch failed for visualizations:", e);
-      }
+    try {
+      const { data, error } = await supabase
+        .from('visualizations')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (data) return data;
+    } catch (e) {
+      console.warn("Cloud visualization fetch failed:", e);
     }
     const local = getLocalDb();
     return (local.visualizations || []).filter((v: any) => v.user_id === userId);
   },
 
-  /**
-   * Saves a video visualization record to the database.
-   */
-  async saveVisualization(userId: string, data: any) {
-    const query = sql();
-    if (query) {
-      try {
-        await query`
-          INSERT INTO public.visualizations (user_id, prompt, video_url, aspect_ratio, resolution)
-          VALUES (${userId}::uuid, ${data.prompt}, ${data.video_url}, ${data.aspect_ratio}, ${data.resolution})
-        `;
-      } catch (e) {
-        console.error("Cloud visualization save failed:", e);
-      }
+  // Fix: Added saveVisualization for VisionGenerator support
+  async saveVisualization(userId: string, vizData: any) {
+    try {
+      await supabase
+        .from('visualizations')
+        .insert({
+          user_id: userId,
+          prompt: vizData.prompt,
+          video_url: vizData.video_url,
+          aspect_ratio: vizData.aspect_ratio,
+          resolution: vizData.resolution
+        });
+    } catch (e) {
+      console.error("Cloud visualization save failed:", e);
     }
     const local = getLocalDb();
     if (!local.visualizations) local.visualizations = [];
-    local.visualizations.push({ 
-      id: window.crypto.randomUUID(), 
-      user_id: userId, 
-      ...data, 
-      created_at: new Date().toISOString() 
+    local.visualizations.push({
+      id: window.crypto.randomUUID(),
+      user_id: userId,
+      ...vizData,
+      created_at: new Date().toISOString()
     });
     saveLocalDb(local);
   }

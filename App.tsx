@@ -7,7 +7,6 @@ import Library from './components/Library.tsx';
 import StudyTimer from './components/StudyTimer.tsx';
 import Chatbot from './components/Chatbot.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
-import VisionGenerator from './components/VisionGenerator.tsx';
 import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types.ts';
 import { db } from './services/dbService.ts';
 import { Database, WifiOff, AlertTriangle, CloudCheck } from 'lucide-react';
@@ -197,7 +196,7 @@ const App: React.FC = () => {
           ) : (
              <div className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-4 py-2 rounded-2xl shadow-sm flex items-center gap-2 text-[10px] font-bold">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              HNS Cloud Sync Active
+              HNS Supabase Sync Active
             </div>
           )}
         </div>
@@ -206,7 +205,6 @@ const App: React.FC = () => {
         {currentView === 'library' && <Library subjects={subjects} files={files} user={user} />}
         {currentView === 'focus' && <StudyTimer subjects={subjects} onUpdateItem={updateItem} />}
         {currentView === 'chat' && <Chatbot user={user} />}
-        {currentView === 'vision' && <VisionGenerator userId={user.id} />}
         {currentView === 'admin' && <AdminPanel user={user} files={files} onAddFile={handleAddFile} onDeleteFile={handleDeleteFile} />}
 
         {/* Global Warning for Local Mode */}
