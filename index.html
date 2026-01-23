@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>HNS Student Companion | Higher School of Renewable Energies</title>
+    <title>HNS Hub | Higher School of Renewable Energies</title>
     
     <!-- Robust Environment Shim - Must be first -->
     <script>
@@ -12,7 +12,7 @@
     </script>
 
     <!-- Primary Meta Tags -->
-    <meta name="title" content="HNS Student Companion">
+    <meta name="title" content="HNS Hub">
     <meta name="description" content="The official academic tracking and focus tool for students of the Higher School of Renewable Energies (HNS).">
     <meta name="theme-color" content="#10b981">
 
@@ -46,6 +46,14 @@
         }
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
+        }
+
+        @keyframes progress-loading {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        .animate-progress-loading {
+            animation: progress-loading 2s ease-in-out infinite;
         }
     </style>
     <script type="importmap">

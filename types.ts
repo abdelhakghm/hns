@@ -4,17 +4,17 @@ export interface User {
   email: string;
   name: string;
   role: 'student' | 'admin';
-  isPrimary?: boolean;
+  is_primary_admin?: boolean;
 }
 
-export type StudyItemType = 'Chapter' | 'TD' | 'TP' | 'Project';
+export type StudyItemType = 'Chapter' | 'TD' | 'TP';
 export type StudyStatus = 'not-started' | 'in-progress' | 'completed';
 
 export interface StudyLog {
   id: string;
   timestamp: string;
   note: string;
-  exercisesAdded?: number;
+  exercises_added?: number;
 }
 
 export interface StudyItem {
@@ -35,14 +35,6 @@ export interface Subject {
   items: StudyItem[];
 }
 
-export interface StudySession {
-  subjectId: string;
-  itemId: string;
-  startTime: number;
-  duration: number; // in seconds
-  method: 'pomodoro' | 'three-hour' | 'custom';
-}
-
 export interface FileResource {
   id: string;
   title: string;
@@ -54,4 +46,4 @@ export interface FileResource {
   fileName?: string;
 }
 
-export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'admin';
+export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'vision' | 'admin';

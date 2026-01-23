@@ -1,37 +1,16 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
-import { DOMAIN_RESTRICTION, APP_LOGO_URL, PRIMARY_ADMIN_EMAIL } from '../constants';
+import { DOMAIN_RESTRICTION, APP_LOGO_URL } from '../constants';
+import { supabase } from '../services/supabase.ts';
 import { db } from '../services/dbService.ts';
 import { 
-  ArrowRight, UserPlus, LogIn, ShieldCheck, Loader2, AlertCircle, Eye, EyeOff, Lock
+  ArrowRight, Loader2, AlertCircle, Eye, EyeOff, Lock
 } from 'lucide-react';
 
 interface AuthProps {
-  onLogin: (user: User) => Promise<void>;
+  onLogin: (user: User) => Promise<void> | void;
 }
-
-// وظيفة التشفير الآمن (Client-side Hashing)
-const hashPassword = async (password: string, salt: string) => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const saltData = encoder.encode(salt);
-  
-  const baseKey = await window.crypto.subtle.importKey(
-    'raw', data, 'PBKDF2', false, ['deriveBits', 'deriveKey']
-  );
-  
-  const derivedKey = await window.crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: saltData, iterations: 100000, hash: 'SHA-256' },
-    baseKey,
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt']
-  );
-  
-  const exported = await window.crypto.subtle.exportKey('raw', derivedKey);
-  return btoa(String.fromCharCode(...new Uint8Array(exported)));
-};
 
 const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -51,130 +30,143 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
     try {
       if (!institutionalEmail.endsWith(DOMAIN_RESTRICTION)) {
-        throw new Error(`الوصول مقتصر على حسابات ${DOMAIN_RESTRICTION} فقط.`);
+        throw new Error(`Access restricted to ${DOMAIN_RESTRICTION} accounts only.`);
       }
 
       if (mode === 'register') {
-        if (password.length < 8) throw new Error("يجب أن تكون كلمة المرور 8 أحرف على الأقل.");
+        if (password.length < 8) throw new Error("Password must be at least 8 characters long.");
         
-        // التحقق من وجود الحساب مسبقاً
-        const existing = await db.getUserByEmail(institutionalEmail);
-        if (existing) throw new Error("هذا الحساب مسجل بالفعل. يرجى تسجيل الدخول.");
-
-        // إنشاء الملح وتشفير كلمة المرور
-        const salt = window.crypto.randomUUID();
-        const password_hash = await hashPassword(password, salt);
-        
-        // تحديد الدور: طالب بشكل افتراضي، إلا إذا كان الإيميل هو الأدمن الأساسي
-        const role = institutionalEmail === PRIMARY_ADMIN_EMAIL.toLowerCase() ? 'admin' : 'student';
-
-        const profile = await db.createProfile({
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email: institutionalEmail,
-          name,
-          password_hash,
-          salt,
-          role
+          password: password,
+          options: {
+            data: { full_name: name }
+          }
         });
 
+        if (authError) throw authError;
+        if (!authData.user) throw new Error("Failed to create user profile.");
+
+        // Wait for trigger to create profile
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const profile = await db.getUserByEmail(institutionalEmail);
+        
         await onLogin({
-          id: profile.id,
-          email: profile.email,
-          name: profile.full_name,
-          role: profile.role,
-          isPrimary: profile.role === 'admin'
+          id: authData.user.id,
+          email: institutionalEmail,
+          name: name || profile?.full_name || 'New Student',
+          role: profile?.role || 'student',
+          is_primary_admin: profile?.role === 'admin'
         });
       } else {
-        // وضع تسجيل الدخول
-        const profile = await db.getUserByEmail(institutionalEmail);
-        if (!profile) throw new Error("الحساب غير موجود. يرجى إنشاء حساب أولاً.");
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: institutionalEmail,
+          password: password,
+        });
 
-        const attemptHash = await hashPassword(password, profile.salt);
-        if (attemptHash !== profile.password_hash) {
-          throw new Error("كلمة المرور غير صحيحة.");
-        }
+        if (authError) throw authError;
+        if (!authData.user) throw new Error("Login failed.");
+
+        const profile = await db.getUserByEmail(institutionalEmail);
 
         await onLogin({
-          id: profile.id,
-          email: profile.email,
-          name: profile.full_name,
-          role: profile.role,
-          isPrimary: profile.is_primary_admin
+          id: authData.user.id,
+          email: institutionalEmail,
+          name: profile?.full_name || 'HNS Student',
+          role: profile?.role || 'student',
+          is_primary_admin: profile?.role === 'admin'
         });
       }
     } catch (err: any) {
-      setError(err.message || "فشل الاتصال بخادم الحماية.");
+      setError(err.message || "A connection error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white rounded-[40px] shadow-2xl shadow-emerald-100/50 border border-slate-100 overflow-hidden">
-        <div className="p-10 text-center">
-          <img src={APP_LOGO_URL} alt="HNS Logo" className="w-20 h-20 mx-auto mb-6 object-contain" />
-          <h1 className="text-3xl font-poppins font-bold text-slate-900">بوابة HNS</h1>
-          <p className="text-slate-400 text-sm mt-2 font-medium">نظام الدخول الموحد للمدرسة العليا</p>
+    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-emerald-400 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-400 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="w-full max-w-md bg-white rounded-[48px] shadow-2xl shadow-emerald-100/50 border border-slate-100 overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-700">
+        <div className="p-12 text-center pb-8">
+          <div className="relative inline-block mb-8">
+            <div className="absolute inset-0 bg-emerald-50 rounded-full scale-150 blur-xl opacity-50" />
+            <img 
+              src={APP_LOGO_URL} 
+              alt="HNS Institutional Logo" 
+              className="w-24 h-24 mx-auto relative z-10 drop-shadow-2xl transition-transform hover:scale-105 duration-500" 
+            />
+          </div>
+          <h1 className="text-4xl font-poppins font-bold text-slate-900 tracking-tight">HNS Hub</h1>
+          <p className="text-slate-400 text-[10px] mt-3 font-bold uppercase tracking-[0.2em]">Single Sign-On for the Higher School</p>
         </div>
 
-        <div className="px-10 pb-10">
-          <div className="flex bg-slate-100 p-1 rounded-2xl mb-8">
+        <div className="px-10 pb-12">
+          <div className="flex bg-slate-50 p-1.5 rounded-2xl mb-8 border border-slate-100">
             <button 
-              onClick={() => setMode('login')}
-              className={`flex-1 py-3 rounded-xl font-bold transition-all ${mode === 'login' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}
+              onClick={() => { setMode('login'); setError(''); }}
+              className={`flex-1 py-3.5 rounded-xl font-bold transition-all text-sm ${mode === 'login' ? 'bg-white text-emerald-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
             >
-              دخول
+              Login
             </button>
             <button 
-              onClick={() => setMode('register')}
-              className={`flex-1 py-3 rounded-xl font-bold transition-all ${mode === 'register' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}
+              onClick={() => { setMode('register'); setError(''); }}
+              className={`flex-1 py-3.5 rounded-xl font-bold transition-all text-sm ${mode === 'register' ? 'bg-white text-emerald-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
             >
-              تسجيل
+              Register
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
-              <input
-                type="text"
-                placeholder="الاسم الكامل"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
-              />
+              <div className="space-y-1">
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm transition-all"
+                />
+              </div>
             )}
             
             <input
               type="email"
-              placeholder={`البريد الجامعي (${DOMAIN_RESTRICTION})`}
+              placeholder={`Institutional Email (${DOMAIN_RESTRICTION})`}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
+              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm transition-all"
             />
 
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="كلمة المرور"
+                placeholder="Password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-sm transition-all"
               />
               <button 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-red-500 bg-red-50 p-4 rounded-2xl text-xs font-bold border border-red-100">
-                <AlertCircle size={16} />
+              <div className="flex items-center gap-3 text-red-500 bg-red-50 p-4 rounded-2xl text-[11px] font-bold border border-red-100 animate-in slide-in-from-top-2">
+                <AlertCircle size={16} className="shrink-0" />
                 <span>{error}</span>
               </div>
             )}
@@ -182,20 +174,24 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-5 bg-slate-900 text-white rounded-2xl font-bold shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3"
+              className="w-full py-5 bg-slate-900 text-white rounded-[24px] font-bold shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 mt-4 active:scale-95"
             >
               {isSubmitting ? <Loader2 className="animate-spin" /> : (
                 <>
-                  {mode === 'login' ? 'فتح البوابة' : 'إنشاء حساب جديد'}
-                  <ArrowRight size={20} />
+                  <span className="text-base">{mode === 'login' ? 'Login to Hub' : 'Create Account'}</span>
+                  <ArrowRight size={20} className="ml-2" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-8 flex items-center justify-center gap-2 text-slate-400">
-            <Lock size={14} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">تشفير PBKDF2 مفعل</span>
+          <div className="mt-10 flex items-center justify-center gap-3 text-slate-300">
+            <div className="h-px w-8 bg-slate-100" />
+            <div className="flex items-center gap-2">
+              <Lock size={12} />
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em]">HNS Secure</span>
+            </div>
+            <div className="h-px w-8 bg-slate-100" />
           </div>
         </div>
       </div>
