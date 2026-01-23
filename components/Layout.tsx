@@ -7,15 +7,14 @@ import {
   Library as LibraryIcon, 
   Timer, 
   MessageSquare, 
-  Settings, 
   LogOut,
   ChevronRight,
   ShieldCheck,
-  Menu
+  Video
 } from 'lucide-react';
 
 interface LayoutProps {
-  user: User;
+  user: User | null;
   currentView: AppView;
   onSetView: (view: AppView) => void;
   onLogout: () => void;
@@ -23,11 +22,14 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogout, children }) => {
+  if (!user) return null;
+
   const navItems = [
     { id: 'dashboard', label: 'My Progress', icon: LayoutDashboard },
     { id: 'library', label: 'Academic Files', icon: LibraryIcon },
     { id: 'focus', label: 'Study Focus', icon: Timer },
     { id: 'chat', label: 'HNS Assistant', icon: MessageSquare },
+    { id: 'vision', label: 'Vision Lab', icon: Video },
   ];
 
   if (user.role === 'admin') {
@@ -104,7 +106,6 @@ const Layout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogout,
 
       {/* Main Content */}
       <main className="flex-1 md:ml-72 p-4 md:p-10 pb-28 md:pb-10">
-        {/* Mobile App Header */}
         <header className="mb-8 flex justify-between items-center md:hidden bg-white p-4 rounded-[24px] shadow-sm border border-slate-100">
           <div className="flex items-center gap-3">
             <LogoComponent className="w-8 h-8 object-contain" />
@@ -136,7 +137,7 @@ const Layout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogout,
                 isActive ? 'text-emerald-600 scale-110' : 'text-slate-400'
               }`}
             >
-              <Icon size={22} className={isActive ? "fill-emerald-50" : ""} />
+              <Icon size={22} />
               <span className={`text-[9px] font-bold uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0'}`}>
                 {item.label.split(' ')[0]}
               </span>

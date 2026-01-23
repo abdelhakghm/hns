@@ -7,9 +7,10 @@ import { GoogleGenAI } from "@google/genai";
 export const generateStudyAdvice = async (prompt: string): Promise<string> => {
   if (!process.env.API_KEY) {
     console.error("HNS Assistant Error: Gemini API Key is missing.");
-    return "The HNS Assistant is currently offline. (Admin: Please configure the API_KEY in Vercel).";
+    return "The HNS Assistant is currently offline. Please contact your administrator.";
   }
 
+  // Always create a new GoogleGenAI instance right before making an API call to ensure it uses the current API key.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
@@ -22,6 +23,7 @@ export const generateStudyAdvice = async (prompt: string): Promise<string> => {
       },
     });
 
+    // Directly access .text property from GenerateContentResponse
     return response.text || "I'm sorry, I couldn't generate a response. Please rephrase your question.";
   } catch (error) {
     console.error("Gemini API Error:", error);
