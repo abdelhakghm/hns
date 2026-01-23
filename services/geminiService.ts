@@ -2,15 +2,13 @@
 import { GoogleGenAI } from "@google/genai";
 
 /**
- * Generates study advice using Gemini 3 Flash model.
+ * Generates academic advice and answers for HNS students.
  */
-export const generateStudyAdvice = async (prompt: string): Promise<string> => {
+export const generateStudyAdvice = async (prompt: string) => {
   if (!process.env.API_KEY) {
-    console.error("HNS Assistant Error: Gemini API Key is missing.");
-    return "The HNS Assistant is currently offline. Please contact your administrator.";
+    return { text: "Assistant offline. Please configure API access." };
   }
 
-  // Always create a new GoogleGenAI instance right before making an API call to ensure it uses the current API key.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   try {
@@ -18,15 +16,14 @@ export const generateStudyAdvice = async (prompt: string): Promise<string> => {
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        systemInstruction: "You are the HNS Student Assistant for the Higher School of Renewable Energies (HNS). You specialize in Solar Energy, Wind Power, and Smart Grids. Be professional, technical when needed, and always encouraging. Address the user as an HNS student.",
+        systemInstruction: "You are the HNS Academic Assistant. Your goal is to help students of the Higher School of Renewable Energies (HNS) with their modules (Solar, Wind, Biomass, etc.). Be concise, professional, and encouraging.",
         temperature: 0.7,
       },
     });
 
-    // Directly access .text property from GenerateContentResponse
-    return response.text || "I'm sorry, I couldn't generate a response. Please rephrase your question.";
+    return { text: response.text || "I couldn't generate a response." };
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "I'm having trouble connecting to my academic core. Please check your connection and try again!";
+    console.error("Gemini Error:", error);
+    return { text: "Connection error. Please try again later." };
   }
 };

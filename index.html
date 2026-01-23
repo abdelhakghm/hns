@@ -25,35 +25,75 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            background-color: #fcfdfe;
             -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
         .font-poppins {
             font-family: 'Poppins', sans-serif;
         }
-        ::-webkit-scrollbar {
-            width: 6px;
+        
+        /* Advanced Animations */
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) skewX(-15deg); }
+            100% { transform: translateX(200%) skewX(-15deg); }
         }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .animate-shimmer {
+            position: relative;
+            overflow: hidden;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #10b981;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #059669;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
+        .animate-shimmer::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 4s infinite linear;
+            pointer-events: none;
         }
 
-        @keyframes progress-loading {
-            0% { width: 0%; }
-            100% { width: 100%; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
         }
-        .animate-progress-loading {
-            animation: progress-loading 2s ease-in-out infinite;
+        .animate-float { animation: float 5s ease-in-out infinite; }
+
+        @keyframes breath {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        .animate-breath { animation: breath 4s ease-in-out infinite; }
+
+        @keyframes stagger-fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stagger-item {
+            opacity: 0;
+            animation: stagger-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #10b981; }
+
+        .energy-pulse {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
     </style>
     <script type="importmap">
@@ -73,7 +113,6 @@
 </head>
 <body>
     <div id="root"></div>
-    <!-- Load the entry point file -->
     <script type="module" src="./index.tsx"></script>
 </body>
 </html>

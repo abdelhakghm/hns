@@ -250,7 +250,8 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {currentView === 'dashboard' && <Dashboard subjects={subjects} onAddSubject={addSubject} onDeleteSubject={deleteSubject} onUpdateSubject={() => {}} onAddItem={addItemToSubject} onDeleteItem={deleteItem} onUpdateItem={updateItem} onReorder={setSubjects} />}
+        {/* Fix: Removed non-existent props onUpdateSubject and onReorder to match DashboardProps interface */}
+        {currentView === 'dashboard' && <Dashboard subjects={subjects} onAddSubject={addSubject} onDeleteSubject={deleteSubject} onAddItem={addItemToSubject} onDeleteItem={deleteItem} onUpdateItem={updateItem} />}
         {currentView === 'library' && <Library subjects={subjects} files={files} user={user} />}
         {currentView === 'focus' && <StudyTimer subjects={subjects} onUpdateItem={updateItem} />}
         {currentView === 'chat' && <Chatbot user={user} />}
