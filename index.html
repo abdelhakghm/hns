@@ -6,95 +6,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>HNS Hub | Higher School of Renewable Energies</title>
     
-    <!-- Robust Environment Shim - Must be first -->
     <script>
         window.process = window.process || { env: {} };
     </script>
 
-    <!-- Primary Meta Tags -->
     <meta name="title" content="HNS Hub">
     <meta name="description" content="The official academic tracking and focus tool for students of the Higher School of Renewable Energies (HNS).">
-    <meta name="theme-color" content="#10b981">
+    <meta name="theme-color" content="#064e3b">
 
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #fcfdfe;
+            background-color: #020617;
+            color: #f8fafc;
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
-        }
-        .font-poppins {
-            font-family: 'Poppins', sans-serif;
+            margin: 0;
         }
         
-        /* Advanced Animations */
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) skewX(-15deg); }
-            100% { transform: translateX(200%) skewX(-15deg); }
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Dynamic Mesh Background */
+        .mesh-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            background-color: #020617;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(161, 94%, 30%, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(188, 94%, 30%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(142, 70%, 45%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(161, 94%, 30%, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
         }
-        .animate-shimmer {
-            position: relative;
-            overflow: hidden;
+
+        /* Kinetic Energy Pulse */
+        @keyframes energy-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        .animate-shimmer::after {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; width: 50%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
-            animation: shimmer 4s infinite linear;
-            pointer-events: none;
+
+        .energy-border {
+            background: linear-gradient(90deg, #10b981, #34d399, #10b981);
+            background-size: 200% 200%;
+            animation: energy-flow 3s ease infinite;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-10px) rotate(2deg); }
         }
-        .animate-float { animation: float 5s ease-in-out infinite; }
+        .animate-float { animation: float 6s ease-in-out infinite; }
 
-        @keyframes breath {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; }
-        }
-        .animate-breath { animation: breath 4s ease-in-out infinite; }
-
-        @keyframes stagger-fade-in {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .stagger-item {
-            opacity: 0;
-            animation: stagger-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        /* Glassmorphism Classes */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #10b981; }
-
-        .energy-pulse {
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-            animation: pulse-green 2s infinite;
-        }
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
+        ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }
     </style>
     <script type="importmap">
 {
@@ -112,6 +100,7 @@
 </script>
 </head>
 <body>
+    <div class="mesh-bg"></div>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
 </body>
