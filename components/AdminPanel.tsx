@@ -28,7 +28,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     loading: false, connected: null, message: 'Checking...'
   });
 
-  const isPrimary = user.email.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase();
+  const isPrimary = user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase();
 
   // Files Tab State
   const [fileTitle, setFileTitle] = useState('');
@@ -268,7 +268,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         <p className="text-[10px] text-slate-400 font-medium truncate">{adm.email}</p>
                       </div>
                     </div>
-                    {isPrimary && adm.email.toLowerCase() !== PRIMARY_ADMIN_EMAIL.toLowerCase() && (
+                    {isPrimary && adm.email && adm.email.toLowerCase() !== PRIMARY_ADMIN_EMAIL.toLowerCase() && (
                       <button onClick={() => handleRemoveAdmin(adm.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
                         <Trash2 size={16} />
                       </button>
