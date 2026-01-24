@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileResource, User } from '../types';
 import { 
-  Trash2, Database, Terminal, 
-  Copy, Check, CloudLightning, RefreshCw, 
-  Settings2, Activity, ShieldAlert, AlertTriangle, UserPlus, ShieldCheck, FileUp, List, Link as LinkIcon, FileText, Info, Loader2
+  Trash2, Database, Check, CloudLightning, Settings2, Activity, ShieldAlert, AlertTriangle, UserPlus, ShieldCheck, FileUp, List, Link as LinkIcon, FileText, Info, Loader2
 } from 'lucide-react';
 import { db } from '../services/dbService.ts';
 import { PRIMARY_ADMIN_EMAIL } from '../constants.ts';
@@ -23,7 +21,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   onDeleteFile
 }) => {
   const [activeTab, setActiveTab] = useState<'files' | 'admins' | 'system'>('files');
-  const [copied, setCopied] = useState(false);
   const [connStatus, setConnStatus] = useState<{ loading: boolean; connected: boolean | null; message: string }>({
     loading: false, connected: null, message: 'Checking...'
   });

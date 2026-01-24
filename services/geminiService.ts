@@ -1,15 +1,13 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-/**
- * Generates academic advice and answers for HNS students.
- */
 export const generateStudyAdvice = async (prompt: string) => {
-  if (!process.env.API_KEY) {
+  const apiKey = (process.env as any).API_KEY;
+  if (!apiKey) {
     return { text: "Assistant offline: Missing API Configuration. Please verify environment setup." };
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   
   try {
     const response = await ai.models.generateContent({

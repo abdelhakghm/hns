@@ -12,9 +12,7 @@ import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './typ
 import { db } from './services/dbService.ts';
 import { supabase } from './services/supabase.ts';
 import { APP_LOGO_URL } from './constants.ts';
-import { Database, WifiOff, AlertTriangle, CloudCheck, RefreshCw } from 'lucide-react';
-
-const USER_KEY = 'hns_companion_user';
+import { WifiOff, RefreshCw } from 'lucide-react';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -39,14 +37,13 @@ const App: React.FC = () => {
       setCloudStatus({ connected: conn.success, message: conn.message });
       
       if (session?.user) {
-        // Fetch profile by ID primarily
         const profile = await db.getUserById(session.user.id);
         
         const u: User = {
           id: session.user.id,
           email: session.user.email || undefined,
           name: profile?.full_name || session.user.user_metadata?.full_name || 'HNS Guest',
-          role: profile?.role || 'student',
+          role: (profile?.role as 'student' | 'admin') || 'student',
           is_primary_admin: profile?.role === 'admin'
         };
         
@@ -75,7 +72,7 @@ const App: React.FC = () => {
         setUser(null);
         setSubjects([]);
       } else if (event === 'SIGNED_IN' && session) {
-        initApp(); // Refresh user state on sign in
+        initApp();
       }
     });
     return () => subscription.unsubscribe();

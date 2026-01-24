@@ -35,7 +35,6 @@
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
             margin: 0;
-            /* Avoid notch on iOS */
             padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -43,7 +42,6 @@
         .font-poppins { font-family: 'Poppins', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Dynamic Mesh Background */
         .mesh-bg {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -57,7 +55,6 @@
             background-attachment: fixed;
         }
 
-        /* Kinetic Energy Pulse */
         @keyframes energy-flow {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -78,24 +75,39 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
 
-        .glass-panel-light {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
         @keyframes float {
             0%, 100% { transform: translateY(0) rotate(0); }
-            50% { transform: translateY(-10px) rotate(2deg); }
+            50% { transform: translateY(-10px) rotate(1deg); }
         }
-        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-float { animation: float 6s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+
+        @keyframes breath {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.03); opacity: 1; }
+        }
+        .animate-breath { animation: breath 4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+
+        @keyframes energy-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .energy-pulse { animation: energy-pulse 2s infinite; }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .animate-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite;
+        }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }
-
-        /* Animation for loading bar */
+        
         @keyframes progress-loading {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }

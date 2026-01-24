@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
 import { DOMAIN_RESTRICTION, PRIMARY_ADMIN_EMAIL } from '../constants';
 import { supabase } from '../services/supabase.ts';
 import { db } from '../services/dbService.ts';
 import { 
-  ArrowRight, Loader2, AlertCircle, Eye, EyeOff, Lock, Zap, ShieldAlert, UserCircle, Settings2, Info, Terminal
+  ArrowRight, Loader2, AlertCircle, Eye, EyeOff, Lock, Zap, ShieldAlert, UserCircle
 } from 'lucide-react';
 
 interface AuthProps {
@@ -47,7 +47,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     }
   };
 
-  // Emergency Bypass for development when Captcha is blocking the user
   const handleEmergencyBypass = () => {
     const isPrimary = email.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase();
     onLogin({
@@ -118,7 +117,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             id: authData.user.id,
             email: institutionalEmail,
             name: profile?.full_name || 'HNS Scholar',
-            role: profile?.role || 'student'
+            role: (profile?.role as 'student' | 'admin') || 'student'
           });
         }
       }
@@ -131,7 +130,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 font-poppins relative overflow-hidden">
-      {/* Background pulses */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
 
       <div className="w-full max-w-lg glass-card rounded-[40px] p-10 md:p-14 relative z-10 border border-emerald-500/20 shadow-2xl">
@@ -275,7 +273,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         </div>
       </div>
 
-      {/* Admin Troubleshooting Footer */}
       <div className="fixed bottom-8 text-center w-full max-w-lg px-10 animate-in fade-in duration-1000">
         <p className="text-[10px] text-slate-600 font-medium">
           Admin Tip: If login fails, use the <b>Emergency Bypass</b> button to enter as an admin while you fix your project settings.
