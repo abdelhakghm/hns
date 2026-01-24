@@ -6,13 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>HNS Hub | Higher School of Renewable Energies</title>
     
+    <!-- PWA / Standalone Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HNS Hub">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png">
+
     <script>
         window.process = window.process || { env: {} };
     </script>
 
     <meta name="title" content="HNS Hub">
     <meta name="description" content="The official academic tracking and focus tool for students of the Higher School of Renewable Energies (HNS).">
-    <meta name="theme-color" content="#064e3b">
+    <meta name="theme-color" content="#10b981">
 
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png">
     
@@ -27,6 +35,9 @@
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
             margin: 0;
+            /* Avoid notch on iOS */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
         
         .font-poppins { font-family: 'Poppins', sans-serif; }
@@ -83,6 +94,15 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }
+
+        /* Animation for loading bar */
+        @keyframes progress-loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .animate-progress-loading {
+            animation: progress-loading 2s infinite linear;
+        }
     </style>
     <script type="importmap">
 {

@@ -1,0 +1,25 @@
+
+{
+  "name": "HNS Hub - Renewable Energies",
+  "short_name": "HNS Hub",
+  "description": "Companion app for the Higher School of Renewable Energies",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
