@@ -30,10 +30,8 @@ const App: React.FC = () => {
     setIsLoading(true);
     setInitError(null);
     try {
-      // 1. Run core connectivity checks in parallel. 
-      // Individual catch blocks prevent a single failure from crashing the whole sequence.
       const [sessionRes, conn] = await Promise.all([
-        supabase.auth.getSession().catch(() => ({ data: { session: null }, error: new Error('Auth unreachable') })),
+        supabase.auth.getSession().catch(() => ({ data: { session: null } })),
         db.testConnection()
       ]);
 
@@ -41,21 +39,18 @@ const App: React.FC = () => {
       setCloudStatus({ connected: conn.success, message: conn.message });
       
       if (session?.user) {
-        // 2. Fetch profile and start data sync
-        const profile = await db.getUserByEmail(session.user.email!).catch(() => null);
+        // Fetch profile by ID primarily
+        const profile = await db.getUserById(session.user.id);
         
         const u: User = {
           id: session.user.id,
-          email: session.user.email!,
-          name: profile?.full_name || session.user.user_metadata?.full_name || 'HNS Student',
+          email: session.user.email || undefined,
+          name: profile?.full_name || session.user.user_metadata?.full_name || 'HNS Guest',
           role: profile?.role || 'student',
           is_primary_admin: profile?.role === 'admin'
         };
         
         setUser(u);
-        localStorage.setItem(USER_KEY, JSON.stringify(u));
-
-        // 3. Parallel fetch of subjects and files
         const [cloudSubs, cloudFiles] = await Promise.all([
           db.getSubjects(u.id).catch(() => []),
           db.getFiles().catch(() => [])
@@ -63,14 +58,11 @@ const App: React.FC = () => {
         setSubjects(cloudSubs);
         setFiles(cloudFiles);
       } else {
-        localStorage.removeItem(USER_KEY);
         const cloudFiles = await db.getFiles().catch(() => []);
         setFiles(cloudFiles);
       }
     } catch (e: any) {
-      console.error("Initialization failed:", e);
-      setInitError(e.message || "Failed to establish secure connection.");
-      setCloudStatus({ connected: false, message: "Local Workspace Active" });
+      setInitError(e.message || "Establishing secure link...");
     } finally {
       setIsLoading(false);
     }
@@ -78,33 +70,28 @@ const App: React.FC = () => {
 
   useEffect(() => {
     initApp();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setSubjects([]);
-        localStorage.removeItem(USER_KEY);
+      } else if (event === 'SIGNED_IN' && session) {
+        initApp(); // Refresh user state on sign in
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const handleLogin = async (u: User) => {
     setIsSyncing(true);
+    setUser(u);
     try {
-      localStorage.setItem(USER_KEY, JSON.stringify(u));
-      setUser(u);
       const [cloudSubs, cloudFiles] = await Promise.all([
         db.getSubjects(u.id).catch(() => []),
         db.getFiles().catch(() => [])
       ]);
       setSubjects(cloudSubs);
       setFiles(cloudFiles);
-    } catch (e: any) {
-      console.error("Login data sync failed:", e);
-      setUser(u);
-    }
+    } catch (e) {}
     setIsSyncing(false);
   };
 
@@ -112,15 +99,11 @@ const App: React.FC = () => {
     setIsSyncing(true);
     try {
       await supabase.auth.signOut().catch(() => {});
-      localStorage.removeItem(USER_KEY);
-      sessionStorage.clear();
       setUser(null);
       setSubjects([]);
       setFiles([]);
       setCurrentView('dashboard');
     } catch (e) {
-      console.error("Logout failed:", e);
-      localStorage.removeItem(USER_KEY);
       setUser(null);
     } finally {
       setIsSyncing(false);
@@ -133,9 +116,7 @@ const App: React.FC = () => {
     try {
       const id = await db.createSubject(user.id, name, category);
       setSubjects(prev => [...prev, { id, name, category, items: [] }]);
-    } catch (e: any) { 
-      console.error(e);
-    }
+    } catch (e) {}
     setIsSyncing(false);
   };
 
@@ -156,9 +137,7 @@ const App: React.FC = () => {
         if (s.id !== subjectId) return s;
         return { ...s, items: [...s.items, { ...item, id, logs: [], progressPercent: Math.round((item.exercisesSolved/item.totalExercises)*100) }] };
       }));
-    } catch (e: any) {
-      console.error(e);
-    }
+    } catch (e: any) {}
     setIsSyncing(false);
   };
 
@@ -181,10 +160,8 @@ const App: React.FC = () => {
           const newSolved = updates.exercisesDelta !== undefined ? Math.min(i.exercisesSolved + updates.exercisesDelta, i.totalExercises) : (updates.exercisesSolved ?? i.exercisesSolved);
           const progressPercent = Math.round((newSolved / i.totalExercises) * 100);
           const finalUpdates = { ...updates, exercisesSolved: newSolved, progressPercent, status: updates.status || (newSolved >= i.totalExercises ? 'completed' : i.status) };
-          
-          db.updateItem(itemId, finalUpdates).catch(console.error);
-          if (logEntry) db.createLog(itemId, logEntry).catch(console.error);
-          
+          db.updateItem(itemId, finalUpdates).catch(() => {});
+          if (logEntry) db.createLog(itemId, logEntry).catch(() => {});
           return { ...i, ...finalUpdates };
         })
       };
@@ -215,28 +192,22 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
         <div className="relative mb-12">
           <div className="absolute inset-0 bg-emerald-100 rounded-full blur-[100px] opacity-30 animate-pulse"></div>
-          <div className="absolute inset-0 bg-blue-100 rounded-full blur-[120px] opacity-20 translate-x-12 translate-y-12 animate-pulse [animation-delay:1s]"></div>
-          
           <img 
             src={APP_LOGO_URL} 
-            alt="HNS Institutional Logo" 
-            className="w-40 h-40 relative z-10 object-contain drop-shadow-[0_20px_50px_rgba(16,185,129,0.3)] animate-in zoom-in-50 duration-700" 
+            alt="HNS Hub" 
+            className="w-40 h-40 relative z-10 object-contain drop-shadow-2xl animate-in zoom-in-50 duration-700" 
           />
         </div>
-        
         <div className="w-56 h-1.5 bg-slate-100 rounded-full overflow-hidden mb-8 shadow-inner">
           <div className="h-full bg-emerald-600 animate-progress-loading"></div>
         </div>
-        
-        <div className="text-center space-y-4">
-           <h2 className="font-poppins font-bold text-slate-900 tracking-tight text-2xl">HNS Hub</h2>
-           <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-[0.3em] opacity-80">Synchronizing Identity...</p>
+        <div className="text-center space-y-2">
+           <h2 className="font-poppins font-bold text-slate-900 text-2xl">Establishing Link...</h2>
+           <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest opacity-80">Syncing Institutional Core</p>
            {initError && (
-             <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-bold border border-red-100 animate-in fade-in flex flex-col items-center gap-2">
-               <AlertTriangle size={16} />
-               <span>Network latency detected. Retrying cloud link...</span>
-               <button onClick={initApp} className="mt-2 text-emerald-600 hover:underline flex items-center gap-1">
-                 <RefreshCw size={10} /> Manual Refresh
+             <div className="mt-4 flex flex-col items-center gap-2">
+               <button onClick={initApp} className="text-emerald-600 hover:underline flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest">
+                 <RefreshCw size={10} /> Manual Sync
                </button>
              </div>
            )}
@@ -259,13 +230,11 @@ const App: React.FC = () => {
           )}
           {!cloudStatus.connected ? (
             <div className="bg-amber-100 text-amber-700 border border-amber-200 px-4 py-2 rounded-2xl shadow-sm flex items-center gap-2 text-[10px] font-bold">
-              <WifiOff size={14} />
-              OFFLINE MODE
+              <WifiOff size={14} /> OFFLINE MODE
             </div>
           ) : (
              <div className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-4 py-2 rounded-2xl shadow-sm flex items-center gap-2 text-[10px] font-bold">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              HNS CLOUD ACTIVE
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> CLOUD ACTIVE
             </div>
           )}
         </div>
@@ -276,16 +245,6 @@ const App: React.FC = () => {
         {currentView === 'chat' && <Chatbot user={user} />}
         {currentView === 'vision' && <VisionGenerator userId={user.id} />}
         {currentView === 'admin' && <AdminPanel user={user} files={files} onAddFile={handleAddFile} onDeleteFile={handleDeleteFile} />}
-
-        {!cloudStatus.connected && (
-          <div className="mt-12 p-6 bg-amber-50 rounded-[32px] border border-amber-100 flex items-center gap-4 text-amber-800">
-            <div className="p-3 bg-amber-100 rounded-2xl"><AlertTriangle size={24} /></div>
-            <div>
-              <p className="font-bold text-sm">Offline Alert</p>
-              <p className="text-xs opacity-80">Your data is saved locally on this browser. Reconnect to sync with the HNS secure servers.</p>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );

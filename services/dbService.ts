@@ -5,17 +5,21 @@ import { User, Subject, StudyItem, FileResource, StudyItemType } from '../types'
 export const db = {
   async testConnection() {
     try {
-      // Use a race to prevent long-hanging "Failed to fetch" on unreachable domains
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000));
       const headRequest = supabase.from('profiles').select('count', { count: 'exact', head: true });
-      
       await Promise.race([headRequest, timeout]);
-      
       return { success: true, message: "Connected to HNS Cloud" };
     } catch (e: any) {
-      console.warn("Cloud connection check failed:", e.message);
       return { success: false, message: "Local Mode Active" };
     }
+  },
+
+  async getUserById(id: string) {
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
+      if (error) return null;
+      return data;
+    } catch (e) { return null; }
   },
 
   async getUserByEmail(email: string) {
@@ -79,7 +83,7 @@ export const db = {
   },
 
   async createSubject(userId: string, name: string, category: string) {
-    const { data } = await supabase.from('subjects').insert({ name, category }).select('id').single();
+    const { data } = await supabase.from('subjects').insert({ name, category, user_id: userId }).select('id').single();
     return data?.id || window.crypto.randomUUID();
   },
 
@@ -171,7 +175,7 @@ export const db = {
 
   async saveChatMessage(userId: string, role: string, content: string) {
     try {
-      await supabase.from('chat_history').insert({ role, content });
+      await supabase.from('chat_history').insert({ role, content, user_id: userId });
     } catch (e) {}
   },
 
@@ -188,7 +192,8 @@ export const db = {
       prompt: viz.prompt,
       video_url: viz.video_url,
       aspect_ratio: viz.aspect_ratio,
-      resolution: viz.resolution
+      resolution: viz.resolution,
+      user_id: userId
     }).select('id').single();
     
     return data;
