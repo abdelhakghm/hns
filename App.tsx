@@ -10,7 +10,7 @@ import AdminPanel from './components/AdminPanel.tsx';
 import Auth from './components/Auth.tsx';
 import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types.ts';
 import { db } from './services/dbService.ts';
-import { Waves, Loader2 } from 'lucide-react';
+import { Waves, Loader2, Zap } from 'lucide-react';
 import { PRIMARY_ADMIN_EMAIL } from './constants.ts';
 
 const App: React.FC = () => {
@@ -192,13 +192,13 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 text-center">
         <div className="relative mb-10 animate-float">
-          <div className="w-24 h-24 border-4 border-cyan-500/10 border-t-cyan-500 rounded-full animate-spin"></div>
+          <div className="w-24 h-24 border-4 border-emerald-500/10 border-t-emerald-500 rounded-full animate-spin"></div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <Waves className="text-cyan-500" size={36} />
+            <Zap className="text-emerald-500" size={36} />
           </div>
         </div>
-        <h1 className="text-3xl font-poppins font-bold text-white uppercase tracking-tighter">LiquidAI Hub</h1>
-        <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.5em] animate-pulse mt-4">Establishing Secure Flux</p>
+        <h1 className="text-3xl font-poppins font-bold text-white uppercase tracking-tighter">HNS Hub</h1>
+        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.5em] animate-pulse mt-4">Establishing Secure Connection</p>
       </div>
     );
   }
@@ -233,9 +233,9 @@ const App: React.FC = () => {
       )}
 
       {isSyncing && (
-        <div className="fixed bottom-10 right-10 md:bottom-12 md:right-12 bg-cyan-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 z-[200]">
+        <div className="fixed bottom-10 right-10 md:bottom-12 md:right-12 bg-emerald-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 z-[200]">
           <Loader2 size={18} className="animate-spin" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Liquid Sync</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest">HNS Sync</span>
         </div>
       )}
     </Layout>

@@ -60,17 +60,17 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* Session Identity Header */}
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-4">
-           <div className="w-12 h-12 rounded-2xl bg-cyan-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner">
+           <div className="w-12 h-12 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
              <UserIcon size={24} />
            </div>
            <div>
              <h4 className="text-white font-bold text-lg leading-tight">{user.name}</h4>
-             <p className="text-[10px] font-bold text-cyan-500/60 uppercase tracking-widest mt-1">LiquidAI Synchronized Hub</p>
+             <p className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-widest mt-1">HNS Hub Synchronized</p>
            </div>
         </div>
         <div className="hidden sm:flex items-center gap-3 px-5 py-2.5 bg-slate-900/50 rounded-2xl border border-white/5">
-           <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-ping"></div>
-           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Liquid Core Active</span>
+           <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div>
+           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hub Active</span>
         </div>
       </div>
 
@@ -89,7 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="12" />
                   <circle
                     cx="50%" cy="50%" r="42%" fill="none"
-                    stroke={overallAvg > 75 ? '#06b6d4' : overallAvg > 30 ? '#22d3ee' : '#0891b2'} 
+                    stroke={overallAvg > 75 ? '#10b981' : overallAvg > 30 ? '#34d399' : '#059669'} 
                     strokeWidth="12" strokeLinecap="round"
                     strokeDasharray="264"
                     strokeDashoffset={264 - (264 * overallAvg / 100)}
@@ -100,22 +100,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <div className="text-4xl md:text-5xl font-poppins font-bold text-white flex items-start">
                     {overallAvg}<span className="text-lg mt-1">%</span>
                   </div>
-                  <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest mt-1">Liquid Flow Rate</span>
+                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mt-1">Academic Progress</span>
                 </div>
               </div>
 
               <div className="space-y-6 flex-1 text-center md:text-left">
                 <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                  <div className="px-4 py-1.5 bg-cyan-950/30 border border-cyan-500/20 rounded-full text-[9px] font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                    <Droplets size={12} className="animate-pulse" /> Liquid Sync: High
+                  <div className="px-4 py-1.5 bg-emerald-950/30 border border-emerald-500/20 rounded-full text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                    <CheckSquare size={12} className="animate-pulse" /> Sync: High
                   </div>
                   <div className="px-4 py-1.5 bg-slate-900/40 border border-white/5 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <Activity size={12} /> Adaptive Core
+                    <Activity size={12} /> HNS Core
                   </div>
                 </div>
                 
                 <h2 className="text-3xl md:text-5xl font-poppins font-bold text-white tracking-tight leading-tight">
-                  LiquidAI <span className="text-cyan-500 italic">Command Node</span>
+                  HNS Hub <span className="text-emerald-500 italic">Command Node</span>
                 </h2>
                 
                 <div className="grid grid-cols-2 gap-6 max-w-sm mx-auto md:mx-0">
@@ -125,7 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                   <div className="space-y-1">
                     <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Yield Factor</p>
-                    <p className="text-2xl md:text-3xl font-bold text-cyan-500">{completedCount}</p>
+                    <p className="text-2xl md:text-3xl font-bold text-emerald-500">{completedCount}</p>
                   </div>
                 </div>
               </div>
@@ -135,17 +135,17 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         <div className="lg:col-span-4 flex flex-col gap-6">
           <div className="glass-card p-8 rounded-[32px] border border-white/5 flex-1 flex flex-col justify-center text-center lg:text-left">
-            <h3 className="font-bold text-white text-lg mb-2">Liquid Yield Monitor</h3>
+            <h3 className="font-bold text-white text-lg mb-2">Academic Yield Monitor</h3>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              System calibration complete. LiquidAI is monitoring your academic trajectory. Efficiency currently at {overallAvg}%.
+              System calibration complete. HNS Hub is monitoring your academic trajectory. Efficiency currently at {overallAvg}%.
             </p>
           </div>
           <button 
             onClick={() => setShowAddSubject(true)}
-            className="w-full py-5 md:py-6 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-[24px] md:rounded-[32px] shadow-2xl shadow-cyan-600/20 transition-all flex items-center justify-center gap-3 active:scale-95 group"
+            className="w-full py-5 md:py-6 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-[24px] md:rounded-[32px] shadow-2xl shadow-emerald-600/20 transition-all flex items-center justify-center gap-3 active:scale-95 group"
           >
             <Plus size={22} className="group-hover:rotate-90 transition-transform" />
-            Initialize Liquid Node
+            Initialize HNS Node
           </button>
         </div>
       </section>
@@ -154,7 +154,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <section className="space-y-6 md:space-y-8">
         <div className="flex items-center justify-between px-4">
           <h2 className="text-xl md:text-2xl font-poppins font-bold text-white flex items-center gap-3">
-            <BarChart3 className="text-cyan-500" size={24} /> Registry Nodes
+            <BarChart3 className="text-emerald-500" size={24} /> Registry Nodes
           </h2>
           <div className="h-px bg-white/5 flex-1 mx-8 hidden lg:block" />
           <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{subjects.length} Units Online</span>
@@ -162,18 +162,18 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {subjects.length === 0 ? (
           <div className="glass-card rounded-[32px] p-16 md:p-24 text-center border-dashed border-white/10 opacity-60">
-            <Droplets size={40} className="mx-auto text-slate-800 mb-6" />
+            <Zap size={40} className="mx-auto text-slate-800 mb-6" />
             <h3 className="text-lg font-bold text-slate-500">No Active Flux</h3>
-            <p className="text-xs text-slate-600 mt-2">Initialize your first module to begin tracking LiquidAI telemetry.</p>
+            <p className="text-xs text-slate-600 mt-2">Initialize your first module to begin tracking HNS Hub telemetry.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
             {subjects.map(subject => (
-              <div key={subject.id} className="glass-card rounded-[32px] p-6 md:p-8 border-transparent hover:border-cyan-500/20 transition-all group/card flex flex-col">
+              <div key={subject.id} className="glass-card rounded-[32px] p-6 md:p-8 border-transparent hover:border-emerald-500/20 transition-all group/card flex flex-col">
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <span className="text-[9px] font-bold text-cyan-500 uppercase tracking-widest">{subject.category}</span>
-                    <h3 className="text-lg font-bold text-white group-hover/card:text-cyan-400 transition-colors mt-0.5">{subject.name}</h3>
+                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">{subject.category}</span>
+                    <h3 className="text-lg font-bold text-white group-hover/card:text-emerald-400 transition-colors mt-0.5">{subject.name}</h3>
                   </div>
                   <button 
                     onClick={() => onDeleteSubject(subject.id)}
@@ -187,7 +187,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   {subject.items.map(item => (
                     <div key={item.id} className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between group/item hover:bg-slate-900/60 transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className={`w-2 h-2 rounded-full ${item.progressPercent === 100 ? 'bg-cyan-500' : 'bg-slate-700'}`} />
+                        <div className={`w-2 h-2 rounded-full ${item.progressPercent === 100 ? 'bg-emerald-500' : 'bg-slate-700'}`} />
                         <div>
                           <p className="text-[11px] font-bold text-white truncate max-w-[120px] md:max-w-none">{item.title}</p>
                           <p className="text-[9px] text-slate-600 font-bold uppercase">{item.type} • {item.progressPercent}%</p>
@@ -196,7 +196,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <div className="flex items-center gap-1.5">
                          <button 
                            onClick={() => onUpdateItem(subject.id, item.id, { exercisesDelta: 1 })}
-                           className="p-2 bg-cyan-500/10 text-cyan-500 rounded-lg hover:bg-cyan-500 hover:text-white transition-all active:scale-90"
+                           className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all active:scale-90"
                          >
                            <PlusCircle size={14} />
                          </button>
@@ -213,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                 <button 
                   onClick={() => setAddingItemTo(subject.id)}
-                  className="w-full py-3.5 border border-dashed border-white/10 rounded-2xl text-[10px] font-bold text-slate-600 uppercase tracking-widest hover:border-cyan-500/40 hover:text-cyan-500 transition-all active:scale-[0.98]"
+                  className="w-full py-3.5 border border-dashed border-white/10 rounded-2xl text-[10px] font-bold text-slate-600 uppercase tracking-widest hover:border-emerald-500/40 hover:text-emerald-500 transition-all active:scale-[0.98]"
                 >
                   + Add Study Unit
                 </button>
@@ -226,8 +226,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* Modals */}
       {showAddSubject && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-[300] flex items-end md:items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-lg glass-card p-8 md:p-12 rounded-[32px] md:rounded-[48px] border-cyan-500/20 shadow-2xl animate-in slide-in-from-bottom-8">
-            <h2 className="text-2xl font-bold text-white mb-6">Initialize Liquid Node</h2>
+          <div className="w-full max-w-lg glass-card p-8 md:p-12 rounded-[32px] md:rounded-[48px] border-emerald-500/20 shadow-2xl animate-in slide-in-from-bottom-8">
+            <h2 className="text-2xl font-bold text-white mb-6">Initialize Hub Node</h2>
             <form onSubmit={handleAddSubject} className="space-y-5">
               <div className="space-y-1.5">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-4">Module Name</label>
@@ -235,7 +235,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   autoFocus
                   value={newSubName}
                   onChange={e => setNewSubName(e.target.value)}
-                  className="w-full px-6 py-4 bg-slate-900 border border-white/10 rounded-2xl text-white outline-none focus:border-cyan-500"
+                  className="w-full px-6 py-4 bg-slate-900 border border-white/10 rounded-2xl text-white outline-none focus:border-emerald-500"
                   placeholder="e.g. Photovoltaics I"
                 />
               </div>
@@ -253,7 +253,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setShowAddSubject(false)} className="flex-1 py-4 text-slate-500 font-bold text-xs uppercase">Cancel</button>
-                <button type="submit" className="flex-[2] py-4 bg-cyan-600 text-white font-bold rounded-2xl shadow-lg">Activate</button>
+                <button type="submit" className="flex-[2] py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg">Activate</button>
               </div>
             </form>
           </div>
@@ -262,7 +262,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       {addingItemTo && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-[300] flex items-end md:items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-lg glass-card p-8 md:p-12 rounded-[32px] md:rounded-[48px] border-cyan-500/20 shadow-2xl animate-in slide-in-from-bottom-8">
+          <div className="w-full max-w-lg glass-card p-8 md:p-12 rounded-[32px] md:rounded-[48px] border-emerald-500/20 shadow-2xl animate-in slide-in-from-bottom-8">
             <h2 className="text-2xl font-bold text-white mb-6">New Registry</h2>
             <form onSubmit={(e) => handleAddItem(e, addingItemTo)} className="space-y-5">
               <div className="space-y-1.5">
@@ -271,7 +271,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   autoFocus
                   value={newItemTitle}
                   onChange={e => setNewItemTitle(e.target.value)}
-                  className="w-full px-6 py-4 bg-slate-900 border border-white/10 rounded-2xl text-white outline-none focus:border-cyan-500"
+                  className="w-full px-6 py-4 bg-slate-900 border border-white/10 rounded-2xl text-white outline-none focus:border-emerald-500"
                   placeholder="e.g. TD 01: Thermodynamic Cycle"
                 />
               </div>
@@ -300,7 +300,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setAddingItemTo(null)} className="flex-1 py-4 text-slate-500 font-bold text-xs uppercase">Discard</button>
-                <button type="submit" className="flex-[2] py-4 bg-cyan-600 text-white font-bold rounded-2xl shadow-lg">Commit</button>
+                <button type="submit" className="flex-[2] py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg">Commit</button>
               </div>
             </form>
           </div>
