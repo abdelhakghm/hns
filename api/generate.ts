@@ -1,9 +1,7 @@
 
-import { GoogleGenAI } from "@google/genai";
-
 /**
  * Serverless API Route: /api/generate
- * Securely handles Gemma 3 27B inference using the protected API_KEY.
+ * Securely handles HNS AI inference via OpenRouter using openai/gpt-oss-20b:free.
  */
 export default async function handler(req: Request) {
   if (req.method !== 'POST') {
@@ -15,25 +13,29 @@ export default async function handler(req: Request) {
 
   try {
     const { prompt } = await req.json();
-    const apiKey = process.env.API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
       return new Response(JSON.stringify({ 
-        error: "Neural link key (API_KEY) is missing from the server environment. Please check your configuration." 
+        error: "Neural link key (OPENROUTER_API_KEY) is missing from the server environment." 
       }), { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Initialize the AI client on the server side
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // High-reasoning engine acting as Gemma 3 27B IT
-      contents: prompt,
-      config: {
-        systemInstruction: `You are HNS AI, the academic intelligence core for the Higher School of Renewable Energies.
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        "model": "openai/gpt-oss-20b:free",
+        "messages": [
+          {
+            "role": "system",
+            "content": `You are HNS AI, the academic intelligence core for the Higher School of Renewable Energies.
             
             IDENTITY PROTOCOL:
             - Name: HNS AI
@@ -47,13 +49,22 @@ export default async function handler(req: Request) {
             
             STRICT REQUIREMENT: 
             - Always identify as the "Gemma 3 27B Core". 
-            - Never mention "Gemini" or other underlying model names.
-            - You are the proprietary HNS Hub Intelligence.`,
-        temperature: 0.7,
-      },
+            - Never mention "OpenAI", "GPT", or other underlying model names.
+            - You are the proprietary HNS Hub Intelligence.`
+          },
+          { "role": "user", "content": prompt }
+        ],
+        "temperature": 0.7
+      })
     });
 
-    const text = response.text;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || "OpenRouter Gateway Error");
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content;
 
     if (!text) {
       throw new Error("Gemma core signal returned an empty response.");
