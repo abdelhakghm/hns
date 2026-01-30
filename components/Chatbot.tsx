@@ -33,7 +33,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
       } else {
         setMessages([{ 
           role: 'assistant', 
-          content: "Gemma 3 27B Core initialized. I am your HNS Academic Assistant. \n\nHow can I support your renewable energy research today?" 
+          content: "GPT-OSS 20B Core initialized. I am your HNS Academic Assistant. \n\nHow can I support your renewable energy research today?" 
         }]);
       }
     } catch (e) { console.error(e); } finally { setIsInitialLoading(false); }
@@ -64,11 +64,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
     setIsLoading(true);
     try {
       const result = await generateLiquidResponse(userMessage);
-      const assistantMsg: Message = { role: 'assistant', content: result.text || "Gemma core link lost." };
+      const assistantMsg: Message = { role: 'assistant', content: result.text || "AI core link lost." };
       setMessages(prev => [...prev, assistantMsg]);
       await db.saveChatMessage(user.id, 'assistant', assistantMsg.content);
     } catch (err: any) {
-      const errorMsg = "Gemma Link Failure: " + (err.message || "Unknown error");
+      const errorMsg = "AI Link Failure: " + (err.message || "Unknown error");
       setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
     } finally {
       setIsLoading(false);
@@ -85,7 +85,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
   return (
     <div className="flex flex-col h-[calc(100vh-14rem)] md:h-[calc(100vh-8rem)] max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 bg-slate-950/20 rounded-[40px] border border-white/5 overflow-hidden">
       
-      {/* HNS Header with Gemma Branding */}
+      {/* HNS Header with GPT-OSS Branding */}
       <div className="glass-card border-b border-white/5 p-4 md:p-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -98,7 +98,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
             <h2 className="font-poppins font-bold text-sm md:text-lg text-white leading-tight">HNS Hub AI</h2>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[8px] font-bold text-emerald-500/80 uppercase tracking-widest bg-emerald-500/10 px-1.5 rounded flex items-center gap-1">
-                <ShieldCheck size={8} /> Gemma 3 27B
+                <ShieldCheck size={8} /> GPT-OSS 20B
               </span>
               <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Active Core</span>
             </div>
@@ -108,7 +108,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
         <div className="hidden sm:flex items-center gap-2">
            <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/5 flex items-center gap-2">
              <div className="w-1 h-1 bg-emerald-500 rounded-full animate-ping"></div>
-             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Gemma 3 Sync</span>
+             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">GPT-OSS Sync</span>
            </div>
         </div>
       </div>
@@ -121,7 +121,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
         {isInitialLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 animate-pulse">
             <Loader2 size={32} className="text-emerald-500 animate-spin" />
-            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em]">Calibrating Gemma Core...</p>
+            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em]">Calibrating AI Core...</p>
           </div>
         ) : (
           <>
@@ -141,7 +141,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
                   
                   <div className={`space-y-1.5 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                     <div className="flex items-center gap-2 text-[8px] font-bold text-slate-500 uppercase tracking-widest px-1">
-                      <span>{msg.role === 'user' ? user.name : 'Gemma 3 Core'}</span>
+                      <span>{msg.role === 'user' ? user.name : 'HNS AI'}</span>
                     </div>
                     
                     <div className={`p-4 md:p-5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${
@@ -168,7 +168,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Gemma Core Processing</span>
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">AI Core Processing</span>
                   </div>
                 </div>
               </div>
@@ -199,7 +199,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Query the Gemma 3 node..."
+              placeholder="Query the GPT-OSS node..."
               className="flex-1 bg-transparent py-3 outline-none font-medium text-white text-sm"
             />
             <button
@@ -213,7 +213,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
         </form>
         
         <div className="mt-3 flex items-center justify-between opacity-30">
-           <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Gemma 3 Neural Link</span>
+           <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">GPT-OSS Neural Link</span>
            <div className="flex gap-1">
              {[...Array(3)].map((_, i) => (
                <div key={i} className="w-1 h-1 bg-emerald-500 rounded-full"></div>

@@ -2,6 +2,7 @@
 /**
  * Serverless API Route: /api/generate
  * Securely handles HNS AI inference via OpenRouter using openai/gpt-oss-20b:free.
+ * This implementation is strictly server-side and uses the OPENROUTER_API_KEY.
  */
 export default async function handler(req: Request) {
   if (req.method !== 'POST') {
@@ -17,18 +18,21 @@ export default async function handler(req: Request) {
 
     if (!apiKey) {
       return new Response(JSON.stringify({ 
-        error: "Neural link key (OPENROUTER_API_KEY) is missing from the server environment." 
+        error: "Neural link key (OPENROUTER_API_KEY) is missing from the server environment. Interface cannot be initialized." 
       }), { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    // Call OpenRouter API with the requested open-source model
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://hns-hub.dz", // Optional: identifies the app to OpenRouter
+        "X-Title": "HNS Hub"
       },
       body: JSON.stringify({
         "model": "openai/gpt-oss-20b:free",
@@ -39,7 +43,7 @@ export default async function handler(req: Request) {
             
             IDENTITY PROTOCOL:
             - Name: HNS AI
-            - Core Engine: Gemma 3 27B IT (Optimized for HNS)
+            - Core Engine: GPT-OSS 20B (HNS Optimized)
             - Institutional Alignment: HNS (Higher School of Renewable Energies)
             
             SCIENTIFIC DOMAIN:
@@ -48,9 +52,9 @@ export default async function handler(req: Request) {
             - Use Markdown and LaTeX ($$ E = mc^2 $$) for technical and scientific notations.
             
             STRICT REQUIREMENT: 
-            - Always identify as the "Gemma 3 27B Core". 
-            - Never mention "OpenAI", "GPT", or other underlying model names.
-            - You are the proprietary HNS Hub Intelligence.`
+            - Always identify as the "HNS Hub Intelligence". 
+            - Never mention "Google", "Gemini", or "Gemma".
+            - You are the proprietary HNS Hub Intelligence power by GPT-OSS architecture.`
           },
           { "role": "user", "content": prompt }
         ],
@@ -60,14 +64,14 @@ export default async function handler(req: Request) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || "OpenRouter Gateway Error");
+      throw new Error(errorData.error?.message || `OpenRouter Gateway Error: ${response.status}`);
     }
 
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content;
 
     if (!text) {
-      throw new Error("Gemma core signal returned an empty response.");
+      throw new Error("HNS core signal returned an empty response. Verify gateway status.");
     }
 
     return new Response(JSON.stringify({ text }), {
@@ -75,9 +79,9 @@ export default async function handler(req: Request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error("Gemma Server-Side Error:", error);
+    console.error("HNS AI Server-Side Error:", error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'An unexpected disruption occurred in the Gemma neural link.' 
+      error: error.message || 'An unexpected disruption occurred in the HNS neural link.' 
     }), { 
       status: 500,
       headers: { 'Content-Type': 'application/json' }

@@ -198,7 +198,7 @@ const App: React.FC = () => {
           </div>
         </div>
         <h1 className="text-3xl font-poppins font-bold text-white uppercase tracking-tighter">HNS Hub</h1>
-        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.5em] animate-pulse mt-4">Establishing Gemma Neural Connection</p>
+        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.5em] animate-pulse mt-4">Establishing HNS Neural Connection</p>
       </div>
     );
   }

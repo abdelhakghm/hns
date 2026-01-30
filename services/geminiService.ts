@@ -26,9 +26,9 @@ export const generateLiquidResponse = async (prompt: string) => {
     const data = await response.json();
     return { text: data.text };
   } catch (error: any) {
-    console.error("Gemma Bridge Connection Failure:", error);
+    console.error("HNS AI Bridge Connection Failure:", error);
     
-    let errorMessage = "An unexpected disruption occurred in the Gemma neural link.";
+    let errorMessage = "An unexpected disruption occurred in the HNS Hub AI neural link.";
     
     if (error.message?.includes("API_KEY") || error.message?.includes("missing from the server")) {
       errorMessage = "The HNS secure gateway is missing its authentication key. Please verify server environment variables.";
@@ -39,7 +39,7 @@ export const generateLiquidResponse = async (prompt: string) => {
     }
     
     return { 
-      text: `⚠️ **Gemma 3 Core Disruption**: ${errorMessage}` 
+      text: `⚠️ **HNS Hub AI Disruption**: ${errorMessage}` 
     };
   }
 };
