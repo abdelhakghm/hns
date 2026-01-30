@@ -1,32 +1,30 @@
 
 /**
  * HNS Hub AI Service
- * Powered by Google Gemini High-Reasoning Core
+ * Powered by Google Gemma Architecture
  */
 import { GoogleGenAI } from "@google/genai";
 
 /**
- * Generates a response using the Gemini 3 Pro engine.
- * We utilize the 'gemini-3-pro-preview' model to act as the 
- * high-intelligence Gemma 3 27B IT core for HNS students.
+ * Generates a response using the high-intelligence neural core.
+ * We use 'gemini-3-pro-preview' as the engine for its reasoning capabilities,
+ * but enforce the Gemma 3 27B identity via system instructions.
  */
 export const generateLiquidResponse = async (prompt: string) => {
+  // Access key exclusively from environment as mandated
   const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
+    console.error("Critical: API_KEY environment variable is undefined.");
     return { 
-      text: "⚠️ **Core Error**: Neural link key (API_KEY) is missing. Interface cannot be initialized." 
+      text: "⚠️ **System Alert**: The neural link (API_KEY) could not be established. Please contact HNS Technical Support." 
     };
   }
 
+  // Create new instance for each request to ensure fresh session state
   const ai = new GoogleGenAI({ apiKey });
   
   try {
-    /**
-     * MODEL SELECTION: 
-     * Switching to 'gemini-3-pro-preview' to resolve the 404 error.
-     * This model is the recommended powerhouse for complex reasoning and academic tasks.
-     */
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -35,15 +33,18 @@ export const generateLiquidResponse = async (prompt: string) => {
             
             IDENTITY PROTOCOL:
             - Name: HNS AI
-            - Core Engine: Gemma 3 27B IT (Simulated for high precision)
+            - Core Engine: Gemma 3 27B IT (Optimized for HNS)
             - Institutional Alignment: HNS (Higher School of Renewable Energies)
             
             SCIENTIFIC DOMAIN:
             - Expert in: Photovoltaics, Wind Power, Green Hydrogen, Smart Grids, and Sustainable Development.
-            - Tone: Precise, analytical, and supportive for HNS students.
-            - Formatting: Use Markdown and LaTeX ($$ E = mc^2 $$) for technical and scientific notations.
+            - Provide precise, academic, and encouraging guidance.
+            - Use Markdown and LaTeX ($$ E = mc^2 $$) for technical and scientific notations.
             
-            Strictly identify as the Gemma 3 27B Core for the HNS Hub.`,
+            STRICT REQUIREMENT: 
+            - Always identify as the "Gemma 3 27B Core". 
+            - Never mention "Gemini" or other underlying model names.
+            - You are the proprietary HNS Hub Intelligence.`,
         temperature: 0.7,
       },
     });
@@ -51,25 +52,23 @@ export const generateLiquidResponse = async (prompt: string) => {
     const text = response.text;
 
     if (!text) {
-      throw new Error("Core signal returned an empty response. Verify safety filters.");
+      throw new Error("Gemma core signal returned an empty response.");
     }
     
     return { text };
   } catch (error: any) {
-    console.error("HNS AI Core Connection Failure:", error);
+    console.error("Gemma Core Connection Failure:", error);
     
-    let errorMessage = "An unexpected disruption occurred in the neural link.";
+    let errorMessage = "An unexpected disruption occurred in the Gemma neural link.";
     
     if (error.message?.includes("404") || error.message?.includes("NOT_FOUND")) {
-      errorMessage = "The requested model node is currently undergoing maintenance in your region.";
+      errorMessage = "The Gemma 3 27B node is currently unavailable in this sector. Standard maintenance may be in progress.";
     } else if (error.message?.includes("API key")) {
-      errorMessage = "Authentication failed: The API key provided is rejected by the gateway.";
-    } else {
-      errorMessage = error.message || "Unknown error occurred.";
+      errorMessage = "Authentication failed: The HNS neural key is invalid or expired.";
     }
     
     return { 
-      text: `⚠️ **AI Core Disruption**: ${errorMessage}` 
+      text: `⚠️ **Gemma 3 Core Disruption**: ${errorMessage}` 
     };
   }
 };

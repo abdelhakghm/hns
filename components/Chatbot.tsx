@@ -64,7 +64,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
     setIsLoading(true);
     try {
       const result = await generateLiquidResponse(userMessage);
-      const assistantMsg: Message = { role: 'assistant', content: result.text || "Connection failed." };
+      const assistantMsg: Message = { role: 'assistant', content: result.text || "Gemma core link lost." };
       setMessages(prev => [...prev, assistantMsg]);
       await db.saveChatMessage(user.id, 'assistant', assistantMsg.content);
     } catch (err: any) {
@@ -95,12 +95,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950"></div>
           </div>
           <div>
-            <h2 className="font-poppins font-bold text-sm md:text-lg text-white leading-tight">HNS AI</h2>
+            <h2 className="font-poppins font-bold text-sm md:text-lg text-white leading-tight">HNS Hub AI</h2>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[8px] font-bold text-emerald-500/80 uppercase tracking-widest bg-emerald-500/10 px-1.5 rounded flex items-center gap-1">
                 <ShieldCheck size={8} /> Gemma 3 27B
               </span>
-              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Active Node</span>
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Active Core</span>
             </div>
           </div>
         </div>
@@ -108,7 +108,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
         <div className="hidden sm:flex items-center gap-2">
            <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/5 flex items-center gap-2">
              <div className="w-1 h-1 bg-emerald-500 rounded-full animate-ping"></div>
-             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Gemma Core 03</span>
+             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Gemma 3 Sync</span>
            </div>
         </div>
       </div>
@@ -168,7 +168,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Gemma 3 Processing</span>
+                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Gemma Core Processing</span>
                   </div>
                 </div>
               </div>
@@ -213,7 +213,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
         </form>
         
         <div className="mt-3 flex items-center justify-between opacity-30">
-           <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Gemma 3 Neural Gateway</span>
+           <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Gemma 3 Neural Link</span>
            <div className="flex gap-1">
              {[...Array(3)].map((_, i) => (
                <div key={i} className="w-1 h-1 bg-emerald-500 rounded-full"></div>
