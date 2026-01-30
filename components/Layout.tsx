@@ -8,7 +8,8 @@ import {
   MessageSquare, 
   Zap,
   ShieldCheck,
-  User as UserIcon
+  User as UserIcon,
+  LogOut
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -38,7 +39,7 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-72 glass-card border-r-0 rounded-r-[40px] p-8 fixed h-screen z-[50]">
         <div className="flex items-center gap-4 mb-16 px-2">
-          <div className="p-3 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-900/40 animate-pulse">
+          <div className="p-3 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-900/40">
             <Zap size={22} className="text-white fill-white" />
           </div>
           <div>
@@ -71,22 +72,29 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
           })}
         </nav>
 
-        <div className="mt-auto">
-          <div className="p-5 bg-slate-900/50 rounded-3xl border border-white/5 flex items-center gap-4 hover:border-emerald-500/30 transition-all cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-inner">
-               {user.name.charAt(0)}
+        <div className="mt-auto pt-8 border-t border-white/5 space-y-4">
+          <div className="px-4 py-3 bg-slate-900/50 rounded-2xl border border-white/5 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg">
+               {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="overflow-hidden">
-              <p className="text-xs font-bold text-white truncate">{user.name}</p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{user.role}</p>
+              <p className="text-[10px] font-bold text-white truncate">{user.email || user.name}</p>
+              <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest mt-0.5">{user.role}</p>
             </div>
           </div>
+          
+          <button 
+            onClick={onLogout}
+            className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all font-bold group"
+          >
+            <LogOut size={18} />
+            <span className="text-sm">Sign Out</span>
+          </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 md:ml-72 p-4 md:p-10 lg:p-12 mb-24 md:mb-0">
-        {/* Mobile Header */}
         <header className="flex md:hidden items-center justify-between mb-8 px-2 pt-safe-top">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-emerald-600 rounded-xl">
@@ -94,9 +102,9 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
             </div>
             <h1 className="font-poppins font-bold text-lg text-white">HNS Hub</h1>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-emerald-500">
-             <UserIcon size={18} />
-          </div>
+          <button onClick={onLogout} className="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-red-500 active:scale-90 transition-all">
+             <LogOut size={18} />
+          </button>
         </header>
 
         <div className="max-w-6xl mx-auto">
@@ -105,7 +113,7 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
       </main>
 
       {/* Mobile Glass Dock */}
-      <nav className="md:hidden fixed bottom-6 left-6 right-6 glass-dock rounded-[28px] px-8 py-4 flex justify-between items-center z-[100] animate-in slide-in-from-bottom-10 duration-500">
+      <nav className="md:hidden fixed bottom-6 left-6 right-6 glass-dock rounded-[28px] px-8 py-4 flex justify-between items-center z-[100]">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;

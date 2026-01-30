@@ -11,8 +11,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HNS Hub">
     <meta name="mobile-web-app-capable" content="yes">
-    <link rel="manifest" href="./manifest.json">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- iOS Specific Icons -->
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png">
 
     <script>
         window.process = window.process || { env: {} };
@@ -40,6 +45,8 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
+            /* Prevent bouncing on some browsers */
+            overscroll-behavior: none;
         }
         
         .font-poppins { font-family: 'Poppins', sans-serif; }
@@ -72,6 +79,8 @@
             -webkit-backdrop-filter: blur(30px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+            /* Handle iOS home indicator */
+            padding-bottom: calc(1rem + var(--safe-bottom));
         }
 
         @keyframes float {
@@ -88,7 +97,7 @@
         /* Mobile specific fixes */
         @media (max-width: 768px) {
             .mobile-safe-top { padding-top: calc(1.5rem + var(--safe-top)); }
-            .mobile-safe-bottom { padding-bottom: calc(5rem + var(--safe-bottom)); }
+            .mobile-safe-bottom { padding-bottom: calc(5.5rem + var(--safe-bottom)); }
         }
     </style>
     <script type="importmap">

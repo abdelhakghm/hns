@@ -1,52 +1,112 @@
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from './services/supabase.ts';
 import Layout from './components/Layout.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import Library from './components/Library.tsx';
 import StudyTimer from './components/StudyTimer.tsx';
 import Chatbot from './components/Chatbot.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
+import Auth from './components/Auth.tsx';
 import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types.ts';
 import { db } from './services/dbService.ts';
 import { Zap, Loader2 } from 'lucide-react';
-
-const MOCK_USER: User = {
-  id: '00000000-0000-0000-0000-000000000000', 
-  name: 'HNS Scholar',
-  role: 'admin' 
-};
+import { PRIMARY_ADMIN_EMAIL } from './constants.ts';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User>(MOCK_USER);
+  const [user, setUser] = useState<User | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [files, setFiles] = useState<FileResource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
 
-  const initApp = async () => {
-    setIsLoading(true);
+  // Listen to Auth State
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        handleUserSession(session.user);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        handleUserSession(session.user);
+      } else {
+        setUser(null);
+        setSubjects([]);
+        setFiles([]);
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleUserSession = async (supabaseUser: any) => {
+    let profile = null;
+    let retries = 0;
+    
+    // Attempt to fetch profile with retries to account for trigger lag
+    while (!profile && retries < 5) {
+      profile = await db.getUserById(supabaseUser.id);
+      if (!profile) {
+        await new Promise(r => setTimeout(r, 1000));
+        retries++;
+      }
+    }
+
+    const isPrimaryAdmin = supabaseUser.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase();
+    
+    // CRITICAL: Ensure the Primary Admin is actually an admin in the database
+    // This allows the DB RLS policies to recognize them for user management.
+    if (isPrimaryAdmin && profile?.role !== 'admin') {
+      try {
+        await db.updateProfileRole(supabaseUser.id, 'admin');
+        // Re-fetch profile to confirm update
+        profile = await db.getUserById(supabaseUser.id);
+      } catch (e) {
+        console.error("Critical: Failed to sync primary admin role.", e);
+      }
+    }
+
+    const role = (isPrimaryAdmin || profile?.role === 'admin') ? 'admin' : 'student';
+
+    const formattedUser: User = {
+      id: supabaseUser.id,
+      email: supabaseUser.email,
+      name: profile?.full_name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'Scholar',
+      role: role as 'admin' | 'student',
+      is_primary_admin: isPrimaryAdmin
+    };
+    
+    setUser(formattedUser);
+    await loadAppData(formattedUser.id);
+    setIsLoading(false);
+  };
+
+  const loadAppData = async (userId: string) => {
     try {
       const [cloudSubs, cloudFiles] = await Promise.all([
-        db.getSubjects(MOCK_USER.id),
+        db.getSubjects(userId),
         db.getFiles()
       ]);
-      
       setSubjects(cloudSubs);
       setFiles(cloudFiles);
     } catch (e) {
-      console.error("DEBUG: Initialization error:", e);
-    } finally {
-      // Small artificial delay for smooth transition
-      setTimeout(() => setIsLoading(false), 800);
+      console.error("Data load failed:", e);
     }
   };
 
-  useEffect(() => {
-    initApp();
-  }, []);
+  const handleLogout = async () => {
+    setIsLoading(true);
+    await supabase.auth.signOut();
+  };
 
   const addSubject = async (name: string, category: string) => {
+    if (!user) return;
     setIsSyncing(true);
     try {
       const id = await db.createSubject(user.id, name, category);
@@ -56,15 +116,17 @@ const App: React.FC = () => {
   };
 
   const deleteSubject = async (id: string) => {
+    if (!user) return;
     setIsSyncing(true);
     try {
-      await db.deleteSubject(id);
+      await db.deleteSubject(user.id, id);
       setSubjects(prev => prev.filter(s => s.id !== id));
     } catch (e) {}
     setIsSyncing(false);
   };
 
   const addItemToSubject = async (subjectId: string, item: Omit<StudyItem, 'id' | 'logs' | 'progressPercent'>) => {
+    if (!user) return;
     setIsSyncing(true);
     try {
       const id = await db.createItem(user.id, subjectId, item);
@@ -77,15 +139,17 @@ const App: React.FC = () => {
   };
 
   const deleteItem = async (subjectId: string, itemId: string) => {
+    if (!user) return;
     setIsSyncing(true);
     try {
-      await db.deleteItem(itemId);
+      await db.deleteItem(user.id, itemId);
       setSubjects(prev => prev.map(s => (s.id === subjectId ? { ...s, items: s.items.filter(i => i.id !== itemId) } : s)));
     } catch (e) {}
     setIsSyncing(false);
   };
 
   const updateItem = async (subjectId: string, itemId: string, updates: Partial<StudyItem> & { exercisesDelta?: number }, logEntry?: Omit<StudyLog, 'id'>) => {
+    if (!user) return;
     setSubjects(prev => prev.map(s => {
       if (s.id !== subjectId) return s;
       return {
@@ -100,8 +164,8 @@ const App: React.FC = () => {
           const newStatus = newSolved === i.totalExercises ? 'completed' : (newSolved > 0 ? 'in-progress' : 'not-started');
           const newPercent = Math.round((newSolved / i.totalExercises) * 100);
 
-          db.updateItem(itemId, { 
-            exercisesSolved: newSolved, 
+          db.updateItem(user.id, itemId, { 
+            exercises_solved: newSolved, 
             status: newStatus, 
             progress_percent: newPercent 
           });
@@ -128,31 +192,28 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 text-center overflow-hidden">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 text-center">
         <div className="relative mb-10 animate-float">
-          <div className="w-24 h-24 md:w-32 md:h-32 border-4 border-emerald-500/10 border-t-emerald-500 rounded-full animate-spin"></div>
+          <div className="w-24 h-24 border-4 border-emerald-500/10 border-t-emerald-500 rounded-full animate-spin"></div>
           <div className="absolute inset-0 flex items-center justify-center">
             <Zap className="text-emerald-500 fill-emerald-500/20" size={36} />
           </div>
         </div>
-        <div className="space-y-3">
-          <h1 className="text-3xl md:text-4xl font-poppins font-bold text-white tracking-tighter uppercase">HNS HUB</h1>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.5em] animate-pulse">Neural Sync Initialization</p>
-            <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
-               <div className="h-full bg-emerald-600 w-1/2 animate-[progress_2s_infinite_linear]" 
-                    style={{ animationName: 'progress-loading' }} />
-            </div>
-          </div>
-        </div>
+        <h1 className="text-3xl font-poppins font-bold text-white uppercase tracking-tighter">HNS HUB</h1>
+        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.5em] animate-pulse mt-4">Establishing Secure Link</p>
       </div>
     );
   }
 
+  if (!user) {
+    return <Auth onAuthSuccess={() => {}} />;
+  }
+
   return (
-    <Layout user={user} currentView={currentView} onSetView={setCurrentView} onLogout={() => {}}>
+    <Layout user={user} currentView={currentView} onSetView={setCurrentView} onLogout={handleLogout}>
       {currentView === 'dashboard' && (
         <Dashboard 
+          user={user}
           subjects={subjects} 
           onAddSubject={addSubject} 
           onDeleteSubject={deleteSubject}
@@ -176,7 +237,7 @@ const App: React.FC = () => {
       {isSyncing && (
         <div className="fixed bottom-10 right-10 md:bottom-12 md:right-12 bg-emerald-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 z-[200]">
           <Loader2 size={18} className="animate-spin" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Optimizing Node</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest">Cloud Sync</span>
         </div>
       )}
     </Layout>

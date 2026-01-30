@@ -5,10 +5,8 @@ import { User, Subject, StudyItem, FileResource, StudyItemType } from '../types'
 export const db = {
   async testConnection() {
     try {
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000));
-      const headRequest = supabase.from('file_resources').select('id', { count: 'exact', head: true }).limit(1);
-      const res = await Promise.race([headRequest, timeout]) as any;
-      if (res.error) throw res.error;
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
       return { success: true, message: "Connected to HNS Cloud" };
     } catch (e: any) {
       console.warn("DB Connection Test failed:", e.message);
@@ -19,12 +17,56 @@ export const db = {
   async getUserById(id: string) {
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
-      if (error) {
-        console.error("DB Error (getUserById):", error.message);
-        return null;
-      }
+      if (error) return null;
       return data;
     } catch (e) { return null; }
+  },
+
+  async getUserByEmail(email: string) {
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('email', email.toLowerCase()).single();
+      if (error) return null;
+      return data;
+    } catch (e) { return null; }
+  },
+
+  async getProfiles(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.error("Failed to fetch profiles:", e);
+      return [];
+    }
+  },
+
+  async updateProfileRole(id: string, role: 'admin' | 'student') {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role })
+      .eq('id', id);
+    if (error) throw error;
+  },
+
+  // Whitelist Management
+  async getAdminWhitelist(): Promise<string[]> {
+    const { data, error } = await supabase.from('admin_whitelist').select('email');
+    if (error) return [];
+    return data.map(d => d.email);
+  },
+
+  async addToAdminWhitelist(email: string) {
+    const { error } = await supabase.from('admin_whitelist').insert({ email: email.toLowerCase() });
+    if (error && !error.message.includes('duplicate key')) throw error;
+  },
+
+  async removeFromAdminWhitelist(email: string) {
+    const { error } = await supabase.from('admin_whitelist').delete().eq('email', email.toLowerCase());
+    if (error) throw error;
   },
 
   // Academic Progress
@@ -36,19 +78,14 @@ export const db = {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
-      if (sError) {
-        console.error("DB Error (getSubjects):", sError.message);
-        return [];
-      }
-      
+      if (sError) return [];
       if (!subjects || subjects.length === 0) return [];
       
       const { data: items, error: iError } = await supabase
         .from('study_items')
         .select('*')
+        .eq('user_id', userId) 
         .in('subject_id', subjects.map(s => s.id));
-      
-      if (iError) console.error("DB Error (getStudyItems):", iError.message);
       
       return subjects.map(s => ({
         id: s.id,
@@ -78,8 +115,8 @@ export const db = {
     return data?.id;
   },
 
-  async deleteSubject(id: string) {
-    await supabase.from('subjects').delete().eq('id', id);
+  async deleteSubject(userId: string, id: string) {
+    await supabase.from('subjects').delete().eq('id', id).eq('user_id', userId);
   },
 
   async createItem(userId: string, subjectId: string, item: any) {
@@ -96,20 +133,19 @@ export const db = {
     return data?.id;
   },
 
-  async updateItem(itemId: string, updates: any) {
+  async updateItem(userId: string, itemId: string, updates: any) {
     const payload: any = {
-      exercises_solved: updates.exercisesSolved,
+      exercises_solved: updates.exercises_solved,
       status: updates.status,
-      progress_percent: updates.progressPercent
+      progress_percent: updates.progress_percent
     };
-    await supabase.from('study_items').update(payload).eq('id', itemId);
+    await supabase.from('study_items').update(payload).eq('id', itemId).eq('user_id', userId);
   },
 
-  async deleteItem(itemId: string) {
-    await supabase.from('study_items').delete().eq('id', itemId);
+  async deleteItem(userId: string, itemId: string) {
+    await supabase.from('study_items').delete().eq('id', itemId).eq('user_id', userId);
   },
 
-  // File Repository
   async getFiles(): Promise<FileResource[]> {
     try {
       const { data, error } = await supabase.from('file_resources').select('*').order('date_added', { ascending: false });
@@ -147,7 +183,6 @@ export const db = {
     await supabase.from('file_resources').delete().eq('id', id);
   },
 
-  // Added saveVisualization to resolve error in VisionGenerator.tsx
   async saveVisualization(userId: string, viz: any) {
     const { data, error } = await supabase.from('visualizations').insert({
       user_id: userId,
@@ -160,7 +195,6 @@ export const db = {
     return data;
   },
 
-  // Added getVisualizations to resolve error in VisionGenerator.tsx
   async getVisualizations(userId: string) {
     try {
       const { data, error } = await supabase
@@ -173,7 +207,6 @@ export const db = {
     } catch (e) { return []; }
   },
 
-  // Logs & Chat
   async createLog(userId: string, itemId: string, log: any) {
     await supabase.from('study_logs').insert({
       user_id: userId,

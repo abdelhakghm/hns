@@ -2,7 +2,7 @@
 import { Subject, FileResource } from './types';
 
 export const DOMAIN_RESTRICTION = '@hns-re2sd.dz';
-export const PRIMARY_ADMIN_EMAIL = `abdelhak${DOMAIN_RESTRICTION}`;
+export const PRIMARY_ADMIN_EMAIL = 'hakoguehmam@gmail.com';
 
 /**
  * OFFICIAL HNS INSTITUTIONAL LOGO (Custom SVG)

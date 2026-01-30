@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { Subject, StudyItem, StudyItemType } from '../types';
+import { Subject, StudyItem, StudyItemType, User } from '../types';
 import { 
-  Plus, BookOpen, Trash2, Zap, Target, X, Radio, TrendingUp, Activity, CheckSquare, PlusCircle, Battery, Wind, Sun, ChevronRight, BarChart3
+  Plus, BookOpen, Trash2, Zap, Target, X, Radio, TrendingUp, Activity, CheckSquare, PlusCircle, Battery, Wind, Sun, ChevronRight, BarChart3, User as UserIcon
 } from 'lucide-react';
 
 interface DashboardProps {
+  user: User;
   subjects: Subject[];
   onAddSubject: (name: string, category: string) => void;
   onDeleteSubject: (id: string) => void;
@@ -15,7 +16,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
-  subjects, onAddSubject, onDeleteSubject, onAddItem, onDeleteItem, onUpdateItem
+  user, subjects, onAddSubject, onDeleteSubject, onAddItem, onDeleteItem, onUpdateItem
 }) => {
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [addingItemTo, setAddingItemTo] = useState<string | null>(null);
@@ -55,6 +56,24 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-8 md:space-y-12 pb-12 animate-in fade-in duration-700">
+      
+      {/* Session Identity Header */}
+      <div className="flex items-center justify-between px-2">
+        <div className="flex items-center gap-4">
+           <div className="w-12 h-12 rounded-2xl bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-inner">
+             <UserIcon size={24} />
+           </div>
+           <div>
+             <h4 className="text-white font-bold text-lg leading-tight">{user.name}</h4>
+             <p className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-widest mt-1">Private Student Workspace</p>
+           </div>
+        </div>
+        <div className="hidden sm:flex items-center gap-3 px-5 py-2.5 bg-slate-900/50 rounded-2xl border border-white/5">
+           <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div>
+           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Secure Link Active</span>
+        </div>
+      </div>
+
       {/* Energy Monitor Hero Section */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
         <div className="lg:col-span-8">
@@ -114,12 +133,11 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* Side Panel Controls */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           <div className="glass-card p-8 rounded-[32px] border border-white/5 flex-1 flex flex-col justify-center text-center lg:text-left">
             <h3 className="font-bold text-white text-lg mb-2">Performance Vector</h3>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Based on your telemetry, your current academic yield is {overallAvg}%. Optimize your trajectory by focusing on pending TD units.
+              Welcome back, {user.name.split(' ')[0]}. Your personal yield is at {overallAvg}%. All telemetry data is strictly isolated to your account.
             </p>
           </div>
           <button 
@@ -205,7 +223,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
       </section>
 
-      {/* Modern Modals */}
+      {/* Modals remain the same... */}
       {showAddSubject && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-[300] flex items-end md:items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="w-full max-w-lg glass-card p-8 md:p-12 rounded-[32px] md:rounded-[48px] border-emerald-500/20 shadow-2xl animate-in slide-in-from-bottom-8">
