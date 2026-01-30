@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase.ts';
 import { User, Subject, StudyItem, FileResource, StudyItemType } from '../types';
 
@@ -120,26 +119,40 @@ export const db = {
   },
 
   async createItem(userId: string, subjectId: string, item: any) {
+    const solved = item.exercisesSolved || 0;
+    const total = item.totalExercises || 1;
+    const percent = Math.round((solved / total) * 100);
+
     const { data, error } = await supabase.from('study_items').insert({
       user_id: userId,
       subject_id: subjectId,
       title: item.title,
       type: item.type,
       status: item.status,
-      exercises_solved: item.exercisesSolved,
-      total_exercises: item.totalExercises
+      exercises_solved: solved,
+      total_exercises: total,
+      progress_percent: percent
     }).select('id').single();
     if (error) throw error;
     return data?.id;
   },
 
   async updateItem(userId: string, itemId: string, updates: any) {
-    const payload: any = {
-      exercises_solved: updates.exercises_solved,
-      status: updates.status,
-      progress_percent: updates.progress_percent
-    };
-    await supabase.from('study_items').update(payload).eq('id', itemId).eq('user_id', userId);
+    // Correctly map JS properties to SQL columns
+    const payload: any = {};
+    if (updates.exercisesSolved !== undefined) payload.exercises_solved = updates.exercisesSolved;
+    if (updates.exercises_solved !== undefined) payload.exercises_solved = updates.exercises_solved;
+    if (updates.totalExercises !== undefined) payload.total_exercises = updates.totalExercises;
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.progressPercent !== undefined) payload.progress_percent = updates.progressPercent;
+    if (updates.progress_percent !== undefined) payload.progress_percent = updates.progress_percent;
+
+    const { error } = await supabase
+      .from('study_items')
+      .update(payload)
+      .eq('id', itemId)
+      .eq('user_id', userId);
+    if (error) throw error;
   },
 
   async deleteItem(userId: string, itemId: string) {

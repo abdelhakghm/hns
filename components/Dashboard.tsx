@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Subject, StudyItem, StudyItemType, User } from '../types';
 import { 
-  Plus, BookOpen, Trash2, Zap, Target, X, Radio, TrendingUp, Activity, CheckSquare, PlusCircle, Battery, Wind, Sun, ChevronRight, BarChart3, User as UserIcon, Droplets, Edit3
+  Plus, Trash2, Zap, X, Activity, CheckSquare, PlusCircle, Sun, BarChart3, User as UserIcon
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -56,7 +55,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleQuickUpdate = (subjectId: string, itemId: string, value: string) => {
-    const solved = parseInt(value) || 0;
+    const solved = parseInt(value);
+    if (isNaN(solved)) return;
     onUpdateItem(subjectId, itemId, { exercisesSolved: solved });
   };
 
@@ -191,49 +191,62 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                 <div className="space-y-3 mb-6 flex-1">
                   {subject.items.map(item => (
-                    <div key={item.id} className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between group/item hover:bg-slate-900/60 transition-colors">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${item.progressPercent === 100 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-700'}`} />
-                        <div className="overflow-hidden flex-1">
-                          <p className="text-[11px] font-bold text-white truncate">{item.title}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[9px] text-emerald-500 font-bold uppercase">{item.type}</span>
-                            <span className="text-[8px] text-slate-600 font-bold">•</span>
-                            <span className="text-[9px] text-slate-400 font-bold">{item.progressPercent}%</span>
-                            <span className="text-[8px] text-slate-600 font-bold">•</span>
-                            {editingItemId === item.id ? (
-                               <input 
-                                 type="number"
-                                 autoFocus
-                                 defaultValue={item.exercisesSolved}
-                                 onBlur={() => setEditingItemId(null)}
-                                 onKeyDown={(e) => { if(e.key === 'Enter') { handleQuickUpdate(subject.id, item.id, e.currentTarget.value); setEditingItemId(null); } }}
-                                 className="w-10 bg-slate-800 border border-emerald-500/50 rounded px-1 text-[9px] font-bold text-emerald-400 outline-none"
-                               />
-                            ) : (
-                               <span 
-                                 onClick={() => setEditingItemId(item.id)}
-                                 className="text-[9px] text-slate-500 font-medium cursor-pointer hover:text-emerald-400"
-                               >
-                                 ({item.exercisesSolved} / {item.totalExercises})
-                               </span>
-                            )}
+                    <div key={item.id} className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 space-y-3 group/item hover:bg-slate-900/60 transition-colors overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.progressPercent === 100 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-700'}`} />
+                          <div className="truncate">
+                             <p className="text-[11px] font-bold text-white truncate">{item.title}</p>
+                             <div className="flex items-center gap-2 mt-0.5">
+                               <span className="text-[9px] text-emerald-500 font-bold uppercase">{item.type}</span>
+                               <span className="text-[8px] text-slate-600 font-bold">•</span>
+                               {editingItemId === item.id ? (
+                                  <input 
+                                    type="number"
+                                    autoFocus
+                                    defaultValue={item.exercisesSolved}
+                                    onBlur={() => setEditingItemId(null)}
+                                    onKeyDown={(e) => { 
+                                      if(e.key === 'Enter') { 
+                                        handleQuickUpdate(subject.id, item.id, e.currentTarget.value); 
+                                        setEditingItemId(null); 
+                                      } 
+                                    }}
+                                    className="w-10 bg-slate-800 border border-emerald-500/50 rounded px-1 text-[9px] font-bold text-emerald-400 outline-none"
+                                  />
+                               ) : (
+                                  <span 
+                                    onClick={() => setEditingItemId(item.id)}
+                                    className="text-[9px] text-slate-500 font-medium cursor-pointer hover:text-emerald-400 transition-colors"
+                                  >
+                                    {item.exercisesSolved}/{item.totalExercises} Solved
+                                  </span>
+                               )}
+                             </div>
                           </div>
                         </div>
+                        <div className="flex items-center gap-1.5">
+                           <button 
+                             onClick={() => onUpdateItem(subject.id, item.id, { exercisesDelta: 1 })}
+                             className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all active:scale-90"
+                           >
+                             <PlusCircle size={14} />
+                           </button>
+                           <button 
+                             onClick={() => onDeleteItem(subject.id, item.id)}
+                             className="p-2 text-slate-800 hover:text-red-500 transition-all opacity-0 group-hover/item:opacity-100"
+                           >
+                             <X size={14} />
+                           </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                         <button 
-                           onClick={() => onUpdateItem(subject.id, item.id, { exercisesDelta: 1 })}
-                           className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all active:scale-90"
-                         >
-                           <PlusCircle size={14} />
-                         </button>
-                         <button 
-                           onClick={() => onDeleteItem(subject.id, item.id)}
-                           className="p-2 text-slate-800 hover:text-red-500 transition-all opacity-0 group-hover/item:opacity-100"
-                         >
-                           <X size={14} />
-                         </button>
+                      
+                      {/* Mini Progress Bar */}
+                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-1000 ${item.progressPercent === 100 ? 'bg-emerald-500' : 'bg-emerald-500/40'}`}
+                          style={{ width: `${item.progressPercent}%` }}
+                        />
                       </div>
                     </div>
                   ))}
@@ -251,7 +264,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
       </section>
 
-      {/* Modals remain the same */}
+      {/* Modals */}
       {showAddSubject && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-[300] flex items-end md:items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="w-full max-w-lg glass-card p-8 md:p-12 rounded-[32px] md:rounded-[48px] border-emerald-500/20 shadow-2xl animate-in slide-in-from-bottom-8">

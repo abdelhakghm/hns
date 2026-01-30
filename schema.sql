@@ -1,19 +1,16 @@
-
--- ==========================================
--- HNS HUB: AUTH SYNC & SECURE RLS SCHEMA
--- Optimized for Academic Yield & Progress Tracking
--- ==========================================
+-- ========================================================
+-- HNS HUB: SECURE ACADEMIC SCHEMA
+-- ========================================================
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. ADMIN WHITELIST
+-- 2. CORE TABLES
 CREATE TABLE IF NOT EXISTS public.admin_whitelist (
   email TEXT PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. PROFILES TABLE
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
   email TEXT UNIQUE,
@@ -23,43 +20,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 4. SECURITY DEFINER HELPER
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles 
-    WHERE id = auth.uid() AND role = 'admin'
-  );
-$$ LANGUAGE sql SECURITY DEFINER;
-
--- 5. AUTO-PROFILE TRIGGER FUNCTION
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
-DECLARE
-  is_whitelisted BOOLEAN;
-BEGIN
-  SELECT EXISTS (SELECT 1 FROM public.admin_whitelist WHERE LOWER(email) = LOWER(new.email)) INTO is_whitelisted;
-
-  INSERT INTO public.profiles (id, email, full_name, role)
-  VALUES (
-    new.id, 
-    new.email, 
-    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    CASE WHEN is_whitelisted THEN 'admin' ELSE 'student' END
-  );
-  RETURN new;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 6. AUTH TRIGGER LINK
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- 7. ACADEMIC DATA TABLES
-
--- Subjects
 CREATE TABLE IF NOT EXISTS public.subjects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -68,7 +28,6 @@ CREATE TABLE IF NOT EXISTS public.subjects (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Study Items (Persisting exercise counts and percentages)
 CREATE TABLE IF NOT EXISTS public.study_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -82,7 +41,6 @@ CREATE TABLE IF NOT EXISTS public.study_items (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Study Logs
 CREATE TABLE IF NOT EXISTS public.study_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -93,7 +51,6 @@ CREATE TABLE IF NOT EXISTS public.study_logs (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- AI Chat History
 CREATE TABLE IF NOT EXISTS public.chat_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -102,7 +59,6 @@ CREATE TABLE IF NOT EXISTS public.chat_history (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Visualizations (VEO Table)
 CREATE TABLE IF NOT EXISTS public.visualizations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -113,7 +69,6 @@ CREATE TABLE IF NOT EXISTS public.visualizations (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Library Resources
 CREATE TABLE IF NOT EXISTS public.file_resources (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
@@ -125,7 +80,39 @@ CREATE TABLE IF NOT EXISTS public.file_resources (
   date_added TIMESTAMPTZ DEFAULT now()
 );
 
--- 8. ENABLE ROW LEVEL SECURITY (RLS)
+-- 3. HELPER FUNCTIONS
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+DECLARE
+  is_whitelisted BOOLEAN;
+BEGIN
+  SELECT EXISTS (SELECT 1 FROM public.admin_whitelist WHERE LOWER(email) = LOWER(new.email)) INTO is_whitelisted;
+  INSERT INTO public.profiles (id, email, full_name, role)
+  VALUES (
+    new.id, 
+    new.email, 
+    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    CASE WHEN is_whitelisted THEN 'admin' ELSE 'student' END
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. TRIGGERS
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 5. RLS POLICIES (CLEANED)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.study_items ENABLE ROW LEVEL SECURITY;
@@ -133,34 +120,25 @@ ALTER TABLE public.study_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.visualizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.file_resources ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.admin_whitelist ENABLE ROW LEVEL SECURITY;
 
--- 9. SECURITY POLICIES (Using DROP IF EXISTS for idempotency)
-
--- Profiles
+-- Drop all existing policies before creating to avoid 42710 error
 DROP POLICY IF EXISTS "Self view" ON public.profiles;
-CREATE POLICY "Self view" ON public.profiles FOR SELECT USING (auth.uid() = id);
 DROP POLICY IF EXISTS "Admin full access" ON public.profiles;
-CREATE POLICY "Admin full access" ON public.profiles FOR ALL TO authenticated USING (public.is_admin());
-
--- Whitelist
-DROP POLICY IF EXISTS "Admin whitelist management" ON public.admin_whitelist;
-CREATE POLICY "Admin whitelist management" ON public.admin_whitelist FOR ALL TO authenticated USING (public.is_admin());
-
--- Subjects/Items/Logs/Chat/Viz (User Isolation)
 DROP POLICY IF EXISTS "Subject user isolation" ON public.subjects;
-CREATE POLICY "Subject user isolation" ON public.subjects FOR ALL USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Item user isolation" ON public.study_items;
-CREATE POLICY "Item user isolation" ON public.study_items FOR ALL USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Log user isolation" ON public.study_logs;
-CREATE POLICY "Log user isolation" ON public.study_logs FOR ALL USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Chat user isolation" ON public.chat_history;
-CREATE POLICY "Chat user isolation" ON public.chat_history FOR ALL USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Viz user isolation" ON public.visualizations;
-CREATE POLICY "Viz user isolation" ON public.visualizations FOR ALL USING (auth.uid() = user_id);
-
--- Library
 DROP POLICY IF EXISTS "Library public read" ON public.file_resources;
-CREATE POLICY "Library public read" ON public.file_resources FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Library admin management" ON public.file_resources;
+
+-- Create Policies
+CREATE POLICY "Self view" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Admin full access" ON public.profiles FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Subject user isolation" ON public.subjects FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Item user isolation" ON public.study_items FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Log user isolation" ON public.study_logs FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Chat user isolation" ON public.chat_history FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Viz user isolation" ON public.visualizations FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Library public read" ON public.file_resources FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Library admin management" ON public.file_resources FOR ALL TO authenticated USING (public.is_admin());
