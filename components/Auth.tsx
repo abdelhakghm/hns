@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase.ts';
 import { 
-  Zap, Lock, Mail, Key, ArrowRight, Loader2, UserPlus, LogIn, User as UserIcon, CheckCircle2, ShieldAlert, AlertTriangle, Globe, Info
+  Zap, Lock, Mail, Key, ArrowRight, Loader2, UserPlus, LogIn, User as UserIcon, CheckCircle2, ShieldAlert, AlertTriangle, Globe
 } from 'lucide-react';
 import { DOMAIN_RESTRICTION } from '../constants.ts';
 
@@ -18,6 +18,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
 
+  const toggleMode = (newMode: 'login' | 'signup') => {
+    setMode(newMode);
+    setError(null);
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -25,7 +30,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Basic Validation
+    // Security check for password length
     if (password.length < 6) {
       setError({ message: "Security protocol: Access Key must be at least 6 characters.", type: 'error' });
       setLoading(false);
@@ -48,13 +53,10 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         if (signUpError) {
           if (signUpError.message.toLowerCase().includes('already registered')) {
             setError({ 
-              message: "Identity found in HNS Registry. Redirecting to Login...", 
+              message: "Identity found in HNS Registry. Switching to Login mode...", 
               type: 'warning' 
             });
-            setTimeout(() => {
-              setMode('login');
-              setError(null);
-            }, 2000);
+            setTimeout(() => toggleMode('login'), 1500);
             return;
           }
           throw signUpError;
@@ -64,7 +66,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           onAuthSuccess();
         } else if (data.user) {
           setError({ 
-            message: "Node registration success! Please confirm the link sent to your email to activate your account.", 
+            message: "Node registration success! Please verify the link sent to " + cleanEmail + " to activate your node.", 
             type: 'success' 
           });
           setPassword('');
@@ -77,12 +79,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         
         if (signInError) {
           const msg = signInError.message.toLowerCase();
+          /**
+           * FIX: Addressing 'Access Denied' error. 
+           * This error occurs when the user tries to login with a non-existent account or wrong password.
+           */
           if (msg.includes('invalid login credentials')) {
-            throw new Error("Access Denied: The email or secret key provided is incorrect. If you haven't registered yet, please switch to 'Join Hub' to create your account.");
+            throw new Error("Access Denied: The email or secret key is incorrect. If you haven't joined the HNS Hub yet, please switch to 'Join Hub' to register your identity.");
           } else if (msg.includes('email not confirmed')) {
-            throw new Error("Activation Pending: Please check your email and confirm your HNS account link.");
-          } else if (msg.includes('network') || msg.includes('fetch')) {
-            throw new Error("Cloud Interruption: Unable to reach the HNS Authentication Server. Please check your network.");
+            throw new Error("Activation Pending: Your account exists but hasn't been verified. Check your institutional email for the activation link.");
           }
           throw signInError;
         }
@@ -111,21 +115,21 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <Zap className="text-white fill-white" size={28} />
           </div>
           <h1 className="text-3xl font-poppins font-bold text-white tracking-tighter">HNS Hub</h1>
-          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em] mt-2">Scholar Access Portal</p>
+          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em] mt-2 text-center">Scholar Access Portal</p>
         </div>
 
         {/* Mode Toggle */}
         <div className="flex bg-slate-900/50 p-1.5 rounded-2xl mb-8 border border-white/5">
           <button 
             type="button"
-            onClick={() => { setMode('login'); setError(null); }}
+            onClick={() => toggleMode('login')}
             className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${mode === 'login' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
           >
             <LogIn size={14} /> Login
           </button>
           <button 
             type="button"
-            onClick={() => { setMode('signup'); setError(null); }}
+            onClick={() => toggleMode('signup')}
             className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${mode === 'signup' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
           >
             <UserPlus size={14} /> Join Hub
@@ -214,7 +218,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           </div>
           <div className="flex items-center gap-2">
             <Globe size={12} className="text-slate-500" />
-            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest italic">HNS Higher School Node</span>
+            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest italic text-center">HNS Higher School Node</span>
           </div>
         </div>
       </div>
