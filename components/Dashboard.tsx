@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Subject, StudyItem, StudyItemType, User } from '../types';
 import { 
-  Plus, BookOpen, Trash2, Zap, Target, X, Radio, TrendingUp, Activity, CheckSquare, PlusCircle, Battery, Wind, Sun, ChevronRight, BarChart3, User as UserIcon, Droplets
+  Plus, BookOpen, Trash2, Zap, Target, X, Radio, TrendingUp, Activity, CheckSquare, PlusCircle, Battery, Wind, Sun, ChevronRight, BarChart3, User as UserIcon, Droplets, Edit3
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -20,6 +20,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const [showAddSubject, setShowAddSubject] = useState(false);
   const [addingItemTo, setAddingItemTo] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   
   const [newSubName, setNewSubName] = useState('');
   const [newSubCat, setNewSubCat] = useState('Renewable Energy');
@@ -52,6 +53,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     });
     setNewItemTitle('');
     setAddingItemTo(null);
+  };
+
+  const handleQuickUpdate = (subjectId: string, itemId: string, value: string) => {
+    const solved = parseInt(value) || 0;
+    onUpdateItem(subjectId, itemId, { exercisesSolved: solved });
   };
 
   return (
@@ -186,11 +192,33 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="space-y-3 mb-6 flex-1">
                   {subject.items.map(item => (
                     <div key={item.id} className="bg-slate-900/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between group/item hover:bg-slate-900/60 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-2 h-2 rounded-full ${item.progressPercent === 100 ? 'bg-emerald-500' : 'bg-slate-700'}`} />
-                        <div>
-                          <p className="text-[11px] font-bold text-white truncate max-w-[120px] md:max-w-none">{item.title}</p>
-                          <p className="text-[9px] text-slate-600 font-bold uppercase">{item.type} • {item.progressPercent}%</p>
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${item.progressPercent === 100 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-700'}`} />
+                        <div className="overflow-hidden flex-1">
+                          <p className="text-[11px] font-bold text-white truncate">{item.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[9px] text-emerald-500 font-bold uppercase">{item.type}</span>
+                            <span className="text-[8px] text-slate-600 font-bold">•</span>
+                            <span className="text-[9px] text-slate-400 font-bold">{item.progressPercent}%</span>
+                            <span className="text-[8px] text-slate-600 font-bold">•</span>
+                            {editingItemId === item.id ? (
+                               <input 
+                                 type="number"
+                                 autoFocus
+                                 defaultValue={item.exercisesSolved}
+                                 onBlur={() => setEditingItemId(null)}
+                                 onKeyDown={(e) => { if(e.key === 'Enter') { handleQuickUpdate(subject.id, item.id, e.currentTarget.value); setEditingItemId(null); } }}
+                                 className="w-10 bg-slate-800 border border-emerald-500/50 rounded px-1 text-[9px] font-bold text-emerald-400 outline-none"
+                               />
+                            ) : (
+                               <span 
+                                 onClick={() => setEditingItemId(item.id)}
+                                 className="text-[9px] text-slate-500 font-medium cursor-pointer hover:text-emerald-400"
+                               >
+                                 ({item.exercisesSolved} / {item.totalExercises})
+                               </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -202,7 +230,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                          </button>
                          <button 
                            onClick={() => onDeleteItem(subject.id, item.id)}
-                           className="p-2 text-slate-800 hover:text-red-500 transition-all md:opacity-0 group-item-hover:opacity-100"
+                           className="p-2 text-slate-800 hover:text-red-500 transition-all opacity-0 group-hover/item:opacity-100"
                          >
                            <X size={14} />
                          </button>
@@ -223,7 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         )}
       </section>
 
-      {/* Modals */}
+      {/* Modals remain the same */}
       {showAddSubject && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-[300] flex items-end md:items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="w-full max-w-lg glass-card p-8 md:p-12 rounded-[32px] md:rounded-[48px] border-emerald-500/20 shadow-2xl animate-in slide-in-from-bottom-8">

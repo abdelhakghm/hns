@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Subject, StudyItem, StudyLog } from '../types';
 import { 
   Play, Pause, RotateCcw, CheckCircle, Zap, 
-  Settings, Gauge, Flame, Save, X, ChevronDown
+  Settings, Gauge, Flame, Save, X, ChevronDown, TrendingUp
 } from 'lucide-react';
 
 interface StudyTimerProps {
@@ -66,6 +66,12 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   const selectedItem = selectedSubject?.items.find(i => i.id === selectedItemId);
+
+  // Calculate projected progress for preview
+  const currentSolved = selectedItem?.exercisesSolved || 0;
+  const totalItems = selectedItem?.totalExercises || 1;
+  const projectedSolved = Math.min(totalItems, currentSolved + solvedInSession);
+  const projectedPercent = Math.round((projectedSolved / totalItems) * 100);
 
   const progressPercent = (timeLeft / POMODORO_TIME);
   const activeSegments = Math.ceil(progressPercent * SEGMENTS);
@@ -225,13 +231,22 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-4">Units Solved</label>
+                  <div className="flex justify-between items-center ml-4">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Units Solved</label>
+                    <div className="flex items-center gap-2">
+                       <TrendingUp size={10} className="text-emerald-500" />
+                       <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">New Progress: {projectedPercent}%</span>
+                    </div>
+                  </div>
                   <input 
                     type="number" 
                     value={solvedInSession}
                     onChange={(e) => setSolvedInSession(parseInt(e.target.value) || 0)}
                     className="w-full px-6 py-4 bg-slate-900/50 border border-white/10 rounded-2xl text-xl font-bold text-emerald-500 outline-none focus:border-emerald-500"
                   />
+                  <p className="text-[9px] text-slate-600 font-bold px-4 uppercase tracking-wider">
+                    Registry will update from {selectedItem?.exercisesSolved || 0} to {projectedSolved} / {totalItems} exercises.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-4">Observations</label>
