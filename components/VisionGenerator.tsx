@@ -72,17 +72,13 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
   const handleOpenSelectKey = async () => {
     if ((window as any).aistudio) {
       await (window as any).aistudio.openSelectKey();
+      // Assume key selection was successful after triggering openSelectKey
       setHasApiKey(true);
     }
   };
 
   const generateVideo = async () => {
     if (!prompt.trim()) return;
-    const apiKey = (process.env as any).API_KEY;
-    if (!apiKey) {
-      setError("AI Key is missing. Please configure your project credentials.");
-      return;
-    }
     
     setError(null);
     setGeneratedVideoUrl(null);
@@ -90,7 +86,8 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
     setMessageIndex(0);
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
+      // Create a new GoogleGenAI instance right before making an API call to ensure current key usage
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
       
       let operation = await ai.models.generateVideos({
         model: 'veo-3.1-fast-generate-preview',
@@ -118,7 +115,8 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
         });
 
         try {
-          const response = await fetch(`${downloadLink}&key=${apiKey}`);
+          // Append API key from environment when fetching from the download link
+          const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
           if (!response.ok) throw new Error("File server access denied.");
           
           const blob = await response.blob();
@@ -128,7 +126,7 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
         } catch (fetchErr: any) {
           console.error("Fetch error:", fetchErr);
           setError("Render succeeded, but file transfer was blocked by browser security.");
-          setGeneratedVideoUrl(downloadLink + `&key=${apiKey}`);
+          setGeneratedVideoUrl(`${downloadLink}&key=${process.env.API_KEY}`);
         }
       } else {
         throw new Error("Generation complete but no media was returned.");
@@ -136,6 +134,7 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
     } catch (err: any) {
       console.error("Gemini Video API Error:", err);
       if (err.message?.includes("Requested entity was not found")) {
+        // If request fails with project not found, prompt user to re-select key
         setHasApiKey(false);
         setError("API key configuration error. Please re-select a valid paid project key.");
       } else {
@@ -153,6 +152,10 @@ const VisionGenerator: React.FC<VisionGeneratorProps> = ({ userId }) => {
         <h2 className="text-2xl font-poppins font-bold text-slate-800">API Key Required</h2>
         <p className="text-slate-500 mt-4 max-w-md mx-auto leading-relaxed">
           Veo-3.1 rendering requires a paid project API key. Please select a valid key from your Google AI Studio account.
+          <br />
+          <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">
+            View Billing Documentation
+          </a>
         </p>
         <button onClick={handleOpenSelectKey} className="mt-8 px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg hover:bg-emerald-700 transition-all flex items-center gap-2">
           Select Paid Project Key <ChevronRight size={18} />

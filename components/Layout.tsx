@@ -6,12 +6,9 @@ import {
   Library as LibraryIcon, 
   Timer, 
   MessageSquare, 
-  LogOut,
-  ChevronRight,
-  ShieldCheck,
   Zap,
-  Activity,
-  Cpu
+  ShieldCheck,
+  User as UserIcon
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -26,88 +23,80 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
   if (!user) return null;
 
   const navItems = [
-    { id: 'dashboard', label: 'Academic Synapse', icon: LayoutDashboard },
-    { id: 'library', label: 'Resource Core', icon: LibraryIcon },
-    { id: 'focus', label: 'Kinetic Focus', icon: Timer },
-    { id: 'chat', label: 'Neural Assistant', icon: MessageSquare },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'library', label: 'Library', icon: LibraryIcon },
+    { id: 'focus', label: 'Focus Timer', icon: Timer },
+    { id: 'chat', label: 'AI Assistant', icon: MessageSquare },
   ];
 
   if (user.role === 'admin') {
-    navItems.push({ id: 'admin', label: 'Security Console', icon: ShieldCheck });
+    navItems.push({ id: 'admin', label: 'Admin', icon: ShieldCheck });
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen font-poppins text-slate-200">
-      {/* Futuristic Cockpit Sidebar */}
-      <aside className="hidden md:flex flex-col w-72 glass-card border-r-0 rounded-r-[48px] p-8 fixed h-full z-[50] animate-in slide-in-from-left duration-700">
-        <div className="flex items-center gap-4 mb-14 px-2">
-          <div className="p-3 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-900/40">
-            <Zap size={20} className="text-white" />
+    <div className="flex flex-col md:flex-row min-h-screen text-slate-200">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-72 glass-card border-r-0 rounded-r-[40px] p-8 fixed h-screen z-[50]">
+        <div className="flex items-center gap-4 mb-16 px-2">
+          <div className="p-3 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-900/40 animate-pulse">
+            <Zap size={22} className="text-white fill-white" />
           </div>
           <div>
-            <h1 className="font-bold text-xl text-white leading-none tracking-tighter">HNS Hub</h1>
-            <div className="flex items-center gap-1.5 mt-1">
-               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-               <p className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest">Link Active</p>
-            </div>
+            <h1 className="font-poppins font-bold text-xl text-white leading-none tracking-tight">HNS Hub</h1>
+            <p className="text-[8px] font-bold text-emerald-400 uppercase tracking-[0.2em] mt-1.5 opacity-80">Institutional Core</p>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1">
-          <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mb-4 px-4">Core Modules</p>
-          {navItems.map((item, idx) => {
+        <nav className="flex-1 space-y-2">
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => onSetView(item.id as AppView)}
-                className={`w-full flex items-center gap-3.5 px-6 py-3.5 rounded-2xl transition-all font-bold relative group ${
+                className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all font-bold group relative ${
                   isActive 
                     ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' 
-                    : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
+                    : 'text-slate-500 hover:bg-white/5 hover:text-slate-300 border border-transparent'
                 }`}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-xs tracking-wide">{item.label}</span>
+                <span className="text-sm tracking-tight">{item.label}</span>
                 {isActive && (
-                  <div className="absolute left-0 w-1 h-4 bg-emerald-500 rounded-r-full shadow-[0_0_10px_rgba(16,185,129,1)]" />
+                  <div className="absolute left-0 w-1.5 h-6 bg-emerald-500 rounded-r-full shadow-[0_0_15px_rgba(16,185,129,0.8)]" />
                 )}
               </button>
             );
           })}
         </nav>
 
-        <div className="mt-auto pt-8 border-t border-white/5">
-          <div className="flex items-center gap-3.5 p-4 mb-4 bg-slate-900/40 rounded-2xl border border-white/5 group transition-all">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-base shadow-lg shadow-emerald-500/20">
+        <div className="mt-auto">
+          <div className="p-5 bg-slate-900/50 rounded-3xl border border-white/5 flex items-center gap-4 hover:border-emerald-500/30 transition-all cursor-pointer">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-inner">
                {user.name.charAt(0)}
             </div>
-            <div className="flex flex-col overflow-hidden">
-              <span className="text-xs font-bold text-white truncate">{user.name}</span>
-              <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest mt-0.5">{user.role} mode</span>
+            <div className="overflow-hidden">
+              <p className="text-xs font-bold text-white truncate">{user.name}</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{user.role}</p>
             </div>
           </div>
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 text-slate-500 hover:text-red-400 hover:bg-red-500/5 rounded-2xl transition-all font-bold text-xs"
-          >
-            <LogOut size={16} />
-            Secure Logout
-          </button>
         </div>
       </aside>
 
-      {/* Main Surface */}
-      <main className="flex-1 md:ml-72 p-6 md:p-12 pb-32 md:pb-12">
-        <header className="mb-10 flex justify-between items-center md:hidden glass-card p-5 rounded-[28px] border-emerald-500/10 sticky top-4 z-[40]">
+      {/* Main Content Area */}
+      <main className="flex-1 md:ml-72 p-4 md:p-10 lg:p-12 mb-24 md:mb-0">
+        {/* Mobile Header */}
+        <header className="flex md:hidden items-center justify-between mb-8 px-2 pt-safe-top">
           <div className="flex items-center gap-3">
-            <Zap size={20} className="text-emerald-500" />
-            <span className="font-bold text-lg text-white tracking-tight">HNS Hub</span>
+            <div className="p-2.5 bg-emerald-600 rounded-xl">
+               <Zap size={18} className="text-white fill-white" />
+            </div>
+            <h1 className="font-poppins font-bold text-lg text-white">HNS Hub</h1>
           </div>
-          <button className="w-9 h-9 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/30">
-            {user.name.charAt(0)}
-          </button>
+          <div className="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-emerald-500">
+             <UserIcon size={18} />
+          </div>
         </header>
 
         <div className="max-w-6xl mx-auto">
@@ -115,8 +104,8 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
         </div>
       </main>
 
-      {/* Navigation Dock - Mobile */}
-      <nav className="md:hidden fixed bottom-6 left-6 right-6 glass-card border-white/10 px-8 py-5 flex justify-between items-center z-[100] shadow-2xl rounded-[32px] animate-in slide-in-from-bottom-10">
+      {/* Mobile Glass Dock */}
+      <nav className="md:hidden fixed bottom-6 left-6 right-6 glass-dock rounded-[28px] px-8 py-4 flex justify-between items-center z-[100] animate-in slide-in-from-bottom-10 duration-500">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -124,12 +113,14 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
             <button
               key={item.id}
               onClick={() => onSetView(item.id as AppView)}
-              className={`flex flex-col items-center gap-1 transition-all ${
-                isActive ? 'text-emerald-400 scale-110' : 'text-slate-600'
+              className={`flex flex-col items-center justify-center transition-all duration-300 relative ${
+                isActive ? 'text-emerald-400 -translate-y-1 scale-110' : 'text-slate-500'
               }`}
             >
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              {isActive && <div className="absolute -bottom-2 w-1 h-1 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,1)]" />}
+              <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              {isActive && (
+                <span className="absolute -bottom-2 w-1 h-1 bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(16,185,129,1)]" />
+              )}
             </button>
           );
         })}

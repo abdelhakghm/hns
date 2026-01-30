@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
     <title>HNS Hub | Higher School of Renewable Energies</title>
     
     <!-- PWA / Standalone Support -->
@@ -18,9 +18,7 @@
         window.process = window.process || { env: {} };
     </script>
 
-    <meta name="title" content="HNS Hub">
-    <meta name="description" content="The official academic tracking and focus tool for students of the Higher School of Renewable Energies (HNS).">
-    <meta name="theme-color" content="#10b981">
+    <meta name="theme-color" content="#020617">
 
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/hns_logo.png">
     
@@ -28,6 +26,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #020617;
@@ -35,8 +38,8 @@
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
             margin: 0;
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
+            padding: 0;
+            min-height: 100vh;
         }
         
         .font-poppins { font-family: 'Poppins', sans-serif; }
@@ -48,72 +51,44 @@
             z-index: -1;
             background-color: #020617;
             background-image: 
-                radial-gradient(at 0% 0%, hsla(161, 94%, 30%, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, hsla(188, 94%, 30%, 0.1) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, hsla(142, 70%, 45%, 0.1) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, hsla(161, 94%, 30%, 0.15) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, hsla(161, 94%, 30%, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(188, 94%, 30%, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(142, 70%, 45%, 0.08) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(161, 94%, 30%, 0.12) 0px, transparent 50%);
             background-attachment: fixed;
         }
 
-        @keyframes energy-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .energy-border {
-            background: linear-gradient(90deg, #10b981, #34d399, #10b981);
-            background-size: 200% 200%;
-            animation: energy-flow 3s ease infinite;
-        }
-
         .glass-card {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-dock {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0); }
-            50% { transform: translateY(-10px) rotate(1deg); }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
         }
-        .animate-float { animation: float 6s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        .animate-float { animation: float 5s ease-in-out infinite; }
 
-        @keyframes breath {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.03); opacity: 1; }
-        }
-        .animate-breath { animation: breath 4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.1); border-radius: 10px; }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.3); }
 
-        @keyframes energy-pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-        .energy-pulse { animation: energy-pulse 2s infinite; }
-
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-        .animate-shimmer {
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            background-size: 200% 100%;
-            animation: shimmer 3s infinite;
-        }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 10px; }
-        
-        @keyframes progress-loading {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        .animate-progress-loading {
-            animation: progress-loading 2s infinite linear;
+        /* Mobile specific fixes */
+        @media (max-width: 768px) {
+            .mobile-safe-top { padding-top: calc(1.5rem + var(--safe-top)); }
+            .mobile-safe-bottom { padding-bottom: calc(5rem + var(--safe-bottom)); }
         }
     </style>
     <script type="importmap">

@@ -6,10 +6,12 @@ export const db = {
   async testConnection() {
     try {
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000));
-      const headRequest = supabase.from('profiles').select('count', { count: 'exact', head: true });
-      await Promise.race([headRequest, timeout]);
+      const headRequest = supabase.from('file_resources').select('id', { count: 'exact', head: true }).limit(1);
+      const res = await Promise.race([headRequest, timeout]) as any;
+      if (res.error) throw res.error;
       return { success: true, message: "Connected to HNS Cloud" };
     } catch (e: any) {
+      console.warn("DB Connection Test failed:", e.message);
       return { success: false, message: "Local Mode Active" };
     }
   },
@@ -17,52 +19,36 @@ export const db = {
   async getUserById(id: string) {
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
-      if (error) return null;
+      if (error) {
+        console.error("DB Error (getUserById):", error.message);
+        return null;
+      }
       return data;
     } catch (e) { return null; }
-  },
-
-  async getUserByEmail(email: string) {
-    try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('email', email.toLowerCase()).single();
-      if (error) return null;
-      return data;
-    } catch (e) { return null; }
-  },
-
-  // Admin Management
-  async getAllAdmins() {
-    try {
-      const { data } = await supabase.from('profiles').select('*').eq('role', 'admin');
-      return data || [];
-    } catch (e) { return []; }
-  },
-
-  async addAdminByEmail(email: string) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ role: 'admin' })
-      .eq('email', email.toLowerCase().trim())
-      .select();
-    if (error) throw error;
-    return data;
-  },
-
-  async removeAdminStatus(userId: string) {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ role: 'student' })
-      .eq('id', userId);
-    if (error) throw error;
   },
 
   // Academic Progress
   async getSubjects(userId: string): Promise<Subject[]> {
     try {
-      const { data: subjects, error: sError } = await supabase.from('subjects').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-      if (sError || !subjects || subjects.length === 0) return [];
+      const { data: subjects, error: sError } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
       
-      const { data: items } = await supabase.from('study_items').select('*').in('subject_id', subjects.map(s => s.id));
+      if (sError) {
+        console.error("DB Error (getSubjects):", sError.message);
+        return [];
+      }
+      
+      if (!subjects || subjects.length === 0) return [];
+      
+      const { data: items, error: iError } = await supabase
+        .from('study_items')
+        .select('*')
+        .in('subject_id', subjects.map(s => s.id));
+      
+      if (iError) console.error("DB Error (getStudyItems):", iError.message);
       
       return subjects.map(s => ({
         id: s.id,
@@ -75,7 +61,7 @@ export const db = {
           status: i.status as any,
           exercisesSolved: i.exercises_solved,
           totalExercises: i.total_exercises,
-          progressPercent: i.progress_percent,
+          progressPercent: i.progress_percent || 0,
           logs: []
         }))
       }));
@@ -83,16 +69,22 @@ export const db = {
   },
 
   async createSubject(userId: string, name: string, category: string) {
-    const { data } = await supabase.from('subjects').insert({ name, category, user_id: userId }).select('id').single();
-    return data?.id || window.crypto.randomUUID();
+    const { data, error } = await supabase
+      .from('subjects')
+      .insert({ name, category, user_id: userId })
+      .select('id')
+      .single();
+    if (error) throw error;
+    return data?.id;
   },
 
   async deleteSubject(id: string) {
     await supabase.from('subjects').delete().eq('id', id);
   },
 
-  async createItem(subjectId: string, item: any) {
-    const { data } = await supabase.from('study_items').insert({
+  async createItem(userId: string, subjectId: string, item: any) {
+    const { data, error } = await supabase.from('study_items').insert({
+      user_id: userId,
       subject_id: subjectId,
       title: item.title,
       type: item.type,
@@ -100,14 +92,17 @@ export const db = {
       exercises_solved: item.exercisesSolved,
       total_exercises: item.totalExercises
     }).select('id').single();
-    return data?.id || window.crypto.randomUUID();
+    if (error) throw error;
+    return data?.id;
   },
 
   async updateItem(itemId: string, updates: any) {
-    await supabase.from('study_items').update({
+    const payload: any = {
       exercises_solved: updates.exercisesSolved,
-      status: updates.status
-    }).eq('id', itemId);
+      status: updates.status,
+      progress_percent: updates.progressPercent
+    };
+    await supabase.from('study_items').update(payload).eq('id', itemId);
   },
 
   async deleteItem(itemId: string) {
@@ -142,35 +137,51 @@ export const db = {
       file_name: file.fileName
     }).select().single();
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      dateAdded: new Date(data.date_added).toLocaleDateString()
+    };
   },
 
   async deleteFile(id: string) {
     await supabase.from('file_resources').delete().eq('id', id);
   },
 
+  // Added saveVisualization to resolve error in VisionGenerator.tsx
+  async saveVisualization(userId: string, viz: any) {
+    const { data, error } = await supabase.from('visualizations').insert({
+      user_id: userId,
+      prompt: viz.prompt,
+      video_url: viz.video_url,
+      aspect_ratio: viz.aspect_ratio,
+      resolution: viz.resolution
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  // Added getVisualizations to resolve error in VisionGenerator.tsx
+  async getVisualizations(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('visualizations')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (e) { return []; }
+  },
+
   // Logs & Chat
-  async createLog(itemId: string, log: any) {
+  async createLog(userId: string, itemId: string, log: any) {
     await supabase.from('study_logs').insert({
+      user_id: userId,
       item_id: itemId,
       note: log.note,
       exercises_added: log.exercises_added || 0,
       timestamp: log.timestamp
     });
-  },
-
-  async getLogs(itemId: string) {
-    try {
-      const { data } = await supabase.from('study_logs').select('*').eq('item_id', itemId).order('created_at', { ascending: false });
-      return data || [];
-    } catch (e) { return []; }
-  },
-
-  async getChatHistory(userId: string) {
-    try {
-      const { data } = await supabase.from('chat_history').select('*').eq('user_id', userId).order('created_at', { ascending: true });
-      return data || [];
-    } catch (e) { return []; }
   },
 
   async saveChatMessage(userId: string, role: string, content: string) {
@@ -179,23 +190,14 @@ export const db = {
     } catch (e) {}
   },
 
-  // Visualizations Persistence
-  async getVisualizations(userId: string) {
+  async getChatHistory(userId: string) {
     try {
-      const { data } = await supabase.from('visualizations').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('role, content')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
       return data || [];
     } catch (e) { return []; }
-  },
-
-  async saveVisualization(userId: string, viz: any) {
-    const { data } = await supabase.from('visualizations').insert({
-      prompt: viz.prompt,
-      video_url: viz.video_url,
-      aspect_ratio: viz.aspect_ratio,
-      resolution: viz.resolution,
-      user_id: userId
-    }).select('id').single();
-    
-    return data;
   }
 };
