@@ -5,7 +5,7 @@ import { db } from '../services/dbService.ts';
 import { User } from '../types';
 import { 
   Send, Bot, Loader2, Zap, 
-  Cpu, Terminal, Command, Fingerprint, Waves, Activity, ChevronRight, Droplets
+  Cpu, Fingerprint, ShieldCheck
 } from 'lucide-react';
 
 interface Message {
@@ -33,7 +33,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
       } else {
         setMessages([{ 
           role: 'assistant', 
-          content: "HNS Intelligence Link established. I am **HNS AI (Gemma 3 27B)**, your specialized core for Renewable Energy scholarship. \n\nHow can I assist your research today?" 
+          content: "Gemma 3 27B Core initialized. I am your HNS Academic Assistant. \n\nHow can I support your renewable energy research today?" 
         }]);
       }
     } catch (e) { console.error(e); } finally { setIsInitialLoading(false); }
@@ -64,21 +64,22 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
     setIsLoading(true);
     try {
       const result = await generateLiquidResponse(userMessage);
-      const assistantMsg: Message = { role: 'assistant', content: result.text };
+      const assistantMsg: Message = { role: 'assistant', content: result.text || "Connection failed." };
       setMessages(prev => [...prev, assistantMsg]);
-      await db.saveChatMessage(user.id, 'assistant', result.text);
-    } catch (err) {
-      console.error(err);
+      await db.saveChatMessage(user.id, 'assistant', assistantMsg.content);
+    } catch (err: any) {
+      const errorMsg = "Gemma Link Failure: " + (err.message || "Unknown error");
+      setMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const NEURAL_PRESETS = [
-    { label: "Solar Logic", prompt: "Explain the efficiency limits of perovskite solar cells." },
-    { label: "Wind Dynamics", prompt: "What are the Betz limits in wind turbine design?" },
-    { label: "Energy Storage", prompt: "Compare Li-ion vs Solid-state battery thermodynamics." },
-    { label: "Gemma Stats", prompt: "Tell me about your Gemma 3 27B architecture capabilities." }
+    { label: "Solar Energy", prompt: "Explain the efficiency limits of Silicon vs Perovskite solar cells." },
+    { label: "Wind Power", prompt: "What are the main advantages of offshore wind turbines?" },
+    { label: "Storage Tech", prompt: "Compare pumped hydro storage with Li-ion batteries for grid stability." },
+    { label: "HNS Info", prompt: "Summarize the key focus areas of the Higher School of Renewable Energies." }
   ];
 
   return (
@@ -94,10 +95,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950"></div>
           </div>
           <div>
-            <h2 className="font-poppins font-bold text-sm md:text-lg text-white leading-tight">HNS AI Assistant</h2>
+            <h2 className="font-poppins font-bold text-sm md:text-lg text-white leading-tight">HNS AI</h2>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[8px] font-bold text-emerald-500/80 uppercase tracking-widest bg-emerald-500/10 px-1.5 rounded">Gemma 3 27B</span>
-              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Active Neural Link</span>
+              <span className="text-[8px] font-bold text-emerald-500/80 uppercase tracking-widest bg-emerald-500/10 px-1.5 rounded flex items-center gap-1">
+                <ShieldCheck size={8} /> Gemma 3 27B
+              </span>
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Active Node</span>
             </div>
           </div>
         </div>
@@ -105,7 +108,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
         <div className="hidden sm:flex items-center gap-2">
            <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/5 flex items-center gap-2">
              <div className="w-1 h-1 bg-emerald-500 rounded-full animate-ping"></div>
-             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Hub Synchronized</span>
+             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Gemma Core 03</span>
            </div>
         </div>
       </div>
@@ -118,7 +121,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
         {isInitialLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 animate-pulse">
             <Loader2 size={32} className="text-emerald-500 animate-spin" />
-            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em]">Calibrating Gemma 3 Core...</p>
+            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em]">Calibrating Gemma Core...</p>
           </div>
         ) : (
           <>
@@ -138,7 +141,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
                   
                   <div className={`space-y-1.5 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
                     <div className="flex items-center gap-2 text-[8px] font-bold text-slate-500 uppercase tracking-widest px-1">
-                      <span>{msg.role === 'user' ? user.name : 'HNS AI'}</span>
+                      <span>{msg.role === 'user' ? user.name : 'Gemma 3 Core'}</span>
                     </div>
                     
                     <div className={`p-4 md:p-5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${
@@ -196,7 +199,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Gemma 3 27B..."
+              placeholder="Query the Gemma 3 node..."
               className="flex-1 bg-transparent py-3 outline-none font-medium text-white text-sm"
             />
             <button
@@ -210,7 +213,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
         </form>
         
         <div className="mt-3 flex items-center justify-between opacity-30">
-           <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">HNS Hub x Gemma 3 Layer</span>
+           <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest">Gemma 3 Neural Gateway</span>
            <div className="flex gap-1">
              {[...Array(3)].map((_, i) => (
                <div key={i} className="w-1 h-1 bg-emerald-500 rounded-full"></div>

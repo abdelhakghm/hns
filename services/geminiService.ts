@@ -6,55 +6,68 @@
 import { GoogleGenAI } from "@google/genai";
 
 /**
- * Generates a response using the Gemma 3 27B model.
- * The system is specifically tuned for Renewable Energy students at HNS.
+ * Generates a response using the Gemma 3 27B architecture.
+ * This service is optimized for Renewable Energy scholarship.
  */
 export const generateLiquidResponse = async (prompt: string) => {
-  // Use process.env.API_KEY directly as specified for the environment configuration
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Use process.env.API_KEY exclusively as mandated
+  const apiKey = process.env.API_KEY;
+  
+  if (!apiKey) {
+    return { 
+      text: "⚠️ **Core Error**: The neural link key is missing. Please ensure 'API_KEY' is configured." 
+    };
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   try {
-    // Model identifier for Google Gemma 3 27B
+    // Switching to the specific Gemma 3 27B model as requested
     const response = await ai.models.generateContent({
       model: 'gemma-3-27b',
       contents: prompt,
       config: {
-        systemInstruction: `You are HNS AI, an advanced research assistant powered by Google's Gemma 3 27B architecture, specifically calibrated for students at the Higher School of Renewable Energies (HNS) Hub.
+        systemInstruction: `You are HNS AI, the academic intelligence core for the Higher School of Renewable Energies.
             
-            OPERATIONAL PROTOCOLS:
-            - Identity: You are the HNS Hub Intelligence Core.
-            - Backbone: You are powered by Google Gemma 3 27B.
-            - Expertise: Advanced Renewable Energy (Solar, Wind, Hydro, Geothermal), Electrical Engineering, Power Systems, Thermal Dynamics, and Green Hydrogen.
-            - Tone: Academic, professional, precise, and encouraging.
-            - Response Style: Use clear Markdown formatting. Use LaTeX for all mathematical and chemical equations (e.g., $$E = mc^2$$). Use structured lists for technical workflows.
-            - Constraints: Your primary goal is to assist HNS students in their specialized curriculum. If asked about your architecture, identify as Gemma 3 27B integrated into the HNS Hub ecosystem.`,
+            IDENTITY & ENGINE:
+            - Name: HNS AI
+            - Core Engine: Google Gemma 3 27B
+            - Institutional Alignment: HNS (Higher School of Renewable Energies)
+            
+            SCIENTIFIC DOMAIN:
+            - You are an expert in Photovoltaics, Wind Kinetics, Thermal Systems, and Sustainable Engineering.
+            - Provide precise, academic, and encouraging guidance.
+            - Use Markdown for structure and LaTeX for technical equations ($$ E = mc^2 $$).
+            
+            Strictly identify as the Gemma 3 27B Core for HNS Hub.`,
         temperature: 0.7,
+        // Removed thinkingConfig as it is specific to Gemini models
       },
     });
 
-    // Access the text directly from the response object
+    // Access the generated text directly from the response
     const text = response.text;
 
     if (!text) {
-      throw new Error("HNS AI (Gemma 3) returned an empty response.");
+      throw new Error("Gemma core returned an empty signal.");
     }
     
     return { text };
   } catch (error: any) {
-    console.error("HNS Hub Connection Failure:", error);
+    console.error("Gemma Core Connection Failure:", error);
     
-    let errorMessage = "An unexpected error occurred in the HNS Intelligence Core.";
+    let errorMessage = "An unexpected disruption occurred in the Gemma core.";
     
-    if (error.message?.includes("API_KEY")) {
-      errorMessage = "The 'API_KEY' environment variable is missing or invalid. Please check your Vercel configuration.";
-    } else if (error.message?.includes("model not found")) {
-      errorMessage = "The specified model (Gemma 3 27B) is currently unavailable in this region.";
+    if (error.message?.includes("API key")) {
+      errorMessage = "Authentication failed. The provided API key is invalid for the Gemma 3 node.";
+    } else if (error.message?.includes("not found")) {
+      errorMessage = "The Gemma 3 27B model is currently undergoing maintenance or is unavailable in this region.";
     } else {
       errorMessage = error.message;
     }
     
     return { 
-      text: `⚠️ **Gemma 3 Core Disruption**: ${errorMessage}` 
+      text: `⚠️ **Gemma 3 Disruption**: ${errorMessage}` 
     };
   }
 };

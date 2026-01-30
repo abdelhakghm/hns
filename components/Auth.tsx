@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase.ts';
 import { 
-  Zap, Lock, Mail, Key, ArrowRight, Loader2, UserPlus, LogIn, User as UserIcon, CheckCircle2, ShieldAlert, AlertTriangle
+  Zap, Lock, Mail, Key, ArrowRight, Loader2, UserPlus, LogIn, User as UserIcon, CheckCircle2, ShieldAlert, AlertTriangle, Globe
 } from 'lucide-react';
+import { DOMAIN_RESTRICTION } from '../constants.ts';
 
 interface AuthProps {
   onAuthSuccess: () => void;
@@ -24,6 +25,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
+    // Basic Validation
+    if (password.length < 6) {
+      setError({ message: "Security protocol requires a key of at least 6 characters.", type: 'error' });
+      setLoading(false);
+      return;
+    }
+
     try {
       if (mode === 'signup') {
         const { data, error: signUpError } = await supabase.auth.signUp({
@@ -40,7 +48,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         if (signUpError) {
           if (signUpError.message.toLowerCase().includes('already registered')) {
             setError({ 
-              message: "Identity already exists. Redirecting to Login...", 
+              message: "Identity already exists in HNS Registry. Redirecting to Login...", 
               type: 'warning' 
             });
             setTimeout(() => {
@@ -55,11 +63,12 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         if (data.session) {
           onAuthSuccess();
         } else if (data.user) {
-          setMode('login');
           setError({ 
-            message: "Identity registration initiated. You can now log in directly.", 
+            message: "Registration successful. Please check your inbox to confirm your HNS identity link before logging in.", 
             type: 'success' 
           });
+          // Clear sensitive data but stay on signup to show the success message clearly
+          setPassword('');
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -68,8 +77,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         });
         
         if (signInError) {
-          if (signInError.message.toLowerCase().includes('invalid login credentials')) {
-            throw new Error("Access Denied: The email or key provided is incorrect.");
+          const msg = signInError.message.toLowerCase();
+          if (msg.includes('invalid login credentials')) {
+            throw new Error("Access Denied: The email or key provided does not match our records.");
+          } else if (msg.includes('email not confirmed')) {
+            throw new Error("Identity Link Pending: Please confirm your email address via the link sent to your inbox.");
+          } else if (msg.includes('network') || msg.includes('fetch')) {
+            throw new Error("HNS Hub Offline: Unable to establish a secure cloud connection. Please check your network.");
           }
           throw signInError;
         }
@@ -78,7 +92,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     } catch (err: any) {
       console.error("Auth Exception:", err);
       setError({ 
-        message: err.message || "A secure connection could not be established.", 
+        message: err.message || "A secure connection could not be established with the HNS Cloud.", 
         type: 'error' 
       });
     } finally {
@@ -89,7 +103,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-slate-950">
       {/* Background Kinetic FX */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
 
       <div className="w-full max-w-md glass-card rounded-[40px] p-10 md:p-12 border border-emerald-500/20 shadow-2xl relative z-10 animate-in fade-in zoom-in-95 duration-500">
         
@@ -98,7 +112,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <Zap className="text-white fill-white" size={28} />
           </div>
           <h1 className="text-3xl font-poppins font-bold text-white tracking-tighter">HNS Hub</h1>
-          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em] mt-2">Access Portal</p>
+          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em] mt-2">Scholar Access Portal</p>
         </div>
 
         {/* Mode Toggle */}
@@ -131,14 +145,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full pl-14 pr-6 py-4 bg-slate-900/40 border border-white/10 rounded-2xl text-white outline-none focus:border-emerald-500 transition-all text-sm"
-                  placeholder="Scholar Name"
+                  placeholder="e.g. Amina Mansouri"
                 />
               </div>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-4">Email Address</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-4">HNS Institutional Email</label>
             <div className="relative">
               <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
               <input
@@ -147,13 +161,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-14 pr-6 py-4 bg-slate-900/40 border border-white/10 rounded-2xl text-white outline-none focus:border-emerald-500 transition-all text-sm"
-                placeholder="your@email.com"
+                placeholder={`user${DOMAIN_RESTRICTION}`}
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-4">Access Key</label>
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-4">Secret Access Key</label>
             <div className="relative">
               <Key className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
               <input
@@ -168,10 +182,10 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           </div>
 
           {error && (
-            <div className={`p-4 rounded-2xl border flex gap-3 items-start animate-in slide-in-from-top-2 transition-colors ${
+            <div className={`p-4 rounded-2xl border flex gap-3 items-start animate-in slide-in-from-top-2 transition-all ${
               error.type === 'success' ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200' : 
               error.type === 'warning' ? 'bg-amber-950/30 border-amber-500/30 text-amber-200' :
-              'bg-red-950/30 border-red-500/30 text-red-200'
+              'bg-red-950/40 border-red-500/30 text-red-200 shadow-[0_0_20px_rgba(239,68,68,0.1)]'
             }`}>
               {error.type === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-400" />}
               {error.type === 'warning' && <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-400" />}
@@ -194,9 +208,15 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           </button>
         </form>
 
-        <div className="mt-8 flex items-center justify-center gap-2 opacity-30">
-          <Lock size={12} className="text-slate-500" />
-          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Secured Core Link Active</span>
+        <div className="mt-8 flex flex-col items-center gap-4 opacity-40">
+          <div className="flex items-center gap-2">
+            <Lock size={12} className="text-slate-500" />
+            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Secured Core Link Active</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Globe size={12} className="text-slate-500" />
+            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest italic">HNS Higher School Node</span>
+          </div>
         </div>
       </div>
     </div>
