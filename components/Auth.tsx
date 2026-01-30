@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase.ts';
 import { 
-  Zap, Lock, Mail, Key, ArrowRight, Loader2, UserPlus, LogIn, User as UserIcon, CheckCircle2, ShieldAlert, AlertTriangle, Globe
+  Zap, Lock, Mail, Key, ArrowRight, Loader2, UserPlus, LogIn, User as UserIcon, CheckCircle2, ShieldAlert, AlertTriangle, Globe, Info
 } from 'lucide-react';
 import { DOMAIN_RESTRICTION } from '../constants.ts';
 
@@ -27,7 +27,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
     // Basic Validation
     if (password.length < 6) {
-      setError({ message: "Security protocol requires a key of at least 6 characters.", type: 'error' });
+      setError({ message: "Security protocol: Access Key must be at least 6 characters.", type: 'error' });
       setLoading(false);
       return;
     }
@@ -48,13 +48,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         if (signUpError) {
           if (signUpError.message.toLowerCase().includes('already registered')) {
             setError({ 
-              message: "Identity already exists in HNS Registry. Redirecting to Login...", 
+              message: "Identity found in HNS Registry. Redirecting to Login...", 
               type: 'warning' 
             });
             setTimeout(() => {
               setMode('login');
               setError(null);
-            }, 2500);
+            }, 2000);
             return;
           }
           throw signUpError;
@@ -64,10 +64,9 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           onAuthSuccess();
         } else if (data.user) {
           setError({ 
-            message: "Registration successful. Please check your inbox to confirm your HNS identity link before logging in.", 
+            message: "Node registration success! Please confirm the link sent to your email to activate your account.", 
             type: 'success' 
           });
-          // Clear sensitive data but stay on signup to show the success message clearly
           setPassword('');
         }
       } else {
@@ -79,11 +78,11 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         if (signInError) {
           const msg = signInError.message.toLowerCase();
           if (msg.includes('invalid login credentials')) {
-            throw new Error("Access Denied: The email or key provided does not match our records.");
+            throw new Error("Access Denied: The email or secret key provided is incorrect. If you haven't registered yet, please switch to 'Join Hub' to create your account.");
           } else if (msg.includes('email not confirmed')) {
-            throw new Error("Identity Link Pending: Please confirm your email address via the link sent to your inbox.");
+            throw new Error("Activation Pending: Please check your email and confirm your HNS account link.");
           } else if (msg.includes('network') || msg.includes('fetch')) {
-            throw new Error("HNS Hub Offline: Unable to establish a secure cloud connection. Please check your network.");
+            throw new Error("Cloud Interruption: Unable to reach the HNS Authentication Server. Please check your network.");
           }
           throw signInError;
         }
@@ -116,7 +115,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         </div>
 
         {/* Mode Toggle */}
-        <div className="flex bg-slate-900/50 p-1 rounded-2xl mb-8 border border-white/5">
+        <div className="flex bg-slate-900/50 p-1.5 rounded-2xl mb-8 border border-white/5">
           <button 
             type="button"
             onClick={() => { setMode('login'); setError(null); }}
