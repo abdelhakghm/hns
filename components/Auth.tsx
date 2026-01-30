@@ -30,7 +30,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Security check for password length
     if (password.length < 6) {
       setError({ message: "Security protocol: Access Key must be at least 6 characters.", type: 'error' });
       setLoading(false);
@@ -66,7 +65,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           onAuthSuccess();
         } else if (data.user) {
           setError({ 
-            message: "Node registration success! Please verify the link sent to " + cleanEmail + " to activate your node.", 
+            message: "Success! Please verify the link sent to " + cleanEmail + " to activate your access.", 
             type: 'success' 
           });
           setPassword('');
@@ -80,13 +79,13 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         if (signInError) {
           const msg = signInError.message.toLowerCase();
           /**
-           * FIX: Addressing 'Access Denied' error. 
-           * This error occurs when the user tries to login with a non-existent account or wrong password.
+           * SPECIFIC FIX: Addressing the common 'Access Denied' confusion.
+           * We clearly distinguish between a wrong password and a non-existent account.
            */
           if (msg.includes('invalid login credentials')) {
-            throw new Error("Access Denied: The email or secret key is incorrect. If you haven't joined the HNS Hub yet, please switch to 'Join Hub' to register your identity.");
+            throw new Error("Access Denied: Incorrect email or secret key. If you haven't joined HNS Hub yet, please switch to the 'Join Hub' tab to create your identity first.");
           } else if (msg.includes('email not confirmed')) {
-            throw new Error("Activation Pending: Your account exists but hasn't been verified. Check your institutional email for the activation link.");
+            throw new Error("Activation Pending: Your account exists but hasn't been verified. Check your institutional inbox for the activation link.");
           }
           throw signInError;
         }
@@ -105,7 +104,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-slate-950">
-      {/* Background Kinetic FX */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
 
       <div className="w-full max-w-md glass-card rounded-[40px] p-10 md:p-12 border border-emerald-500/20 shadow-2xl relative z-10 animate-in fade-in zoom-in-95 duration-500">
@@ -118,7 +116,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em] mt-2 text-center">Scholar Access Portal</p>
         </div>
 
-        {/* Mode Toggle */}
         <div className="flex bg-slate-900/50 p-1.5 rounded-2xl mb-8 border border-white/5">
           <button 
             type="button"
