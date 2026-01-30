@@ -1,7 +1,8 @@
 
 /**
  * Serverless API Route: /api/generate
- * Securely handles HNS AI inference via OpenRouter using openai/gpt-oss-20b:free.
+ * Securely handles HNS AI inference via OpenRouter.
+ * Optimized for speed using meta-llama/llama-3.1-8b-instruct:free.
  * This implementation is strictly server-side and uses the OPENROUTER_API_KEY.
  */
 export default async function handler(req: Request) {
@@ -25,17 +26,20 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Call OpenRouter API with the requested open-source model
+    /**
+     * MODEL SELECTION: Switched to 'meta-llama/llama-3.1-8b-instruct:free'
+     * This model offers extremely low latency (fast processing) compared to 20B+ models.
+     */
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://hns-hub.dz", // Optional: identifies the app to OpenRouter
+        "HTTP-Referer": "https://hns-hub.dz",
         "X-Title": "HNS Hub"
       },
       body: JSON.stringify({
-        "model": "openai/gpt-oss-20b:free",
+        "model": "meta-llama/llama-3.1-8b-instruct:free",
         "messages": [
           {
             "role": "system",
@@ -43,7 +47,7 @@ export default async function handler(req: Request) {
             
             IDENTITY PROTOCOL:
             - Name: HNS AI
-            - Core Engine: GPT-OSS 20B (HNS Optimized)
+            - Core Engine: High-Speed Neural Core (HNS Optimized)
             - Institutional Alignment: HNS (Higher School of Renewable Energies)
             
             SCIENTIFIC DOMAIN:
@@ -53,12 +57,13 @@ export default async function handler(req: Request) {
             
             STRICT REQUIREMENT: 
             - Always identify as the "HNS Hub Intelligence". 
-            - Never mention "Google", "Gemini", or "Gemma".
-            - You are the proprietary HNS Hub Intelligence power by GPT-OSS architecture.`
+            - Never mention "Google", "Gemini", "Gemma", "OpenAI", or "Llama".
+            - You are the proprietary HNS Hub Intelligence core.`
           },
           { "role": "user", "content": prompt }
         ],
-        "temperature": 0.7
+        "temperature": 0.6, // Slightly lower temperature for faster, more focused academic responses
+        "max_tokens": 1000
       })
     });
 
