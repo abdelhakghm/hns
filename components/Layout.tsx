@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   User as UserIcon,
   LogOut,
-  Waves
+  Calculator
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -26,6 +26,7 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'grades', label: 'Yield Calc', icon: Calculator },
     { id: 'library', label: 'Library', icon: LibraryIcon },
     { id: 'focus', label: 'Focus Timer', icon: Timer },
     { id: 'chat', label: 'HNS AI', icon: Zap },

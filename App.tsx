@@ -7,6 +7,7 @@ import Library from './components/Library.tsx';
 import StudyTimer from './components/StudyTimer.tsx';
 import Chatbot from './components/Chatbot.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
+import GradesCalculator from './components/GradesCalculator.tsx';
 import Auth from './components/Auth.tsx';
 import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types.ts';
 import { db } from './services/dbService.ts';
@@ -258,6 +259,9 @@ const App: React.FC = () => {
           onDeleteItem={deleteItem}
           onUpdateItem={updateItem}
         />
+      )}
+      {currentView === 'grades' && (
+        <GradesCalculator />
       )}
       {currentView === 'library' && (
         <Library subjects={subjects} files={files} user={user} />

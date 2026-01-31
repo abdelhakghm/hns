@@ -1,3 +1,4 @@
+
 -- ========================================================
 -- HNS HUB: SECURE ACADEMIC SCHEMA
 -- ========================================================
@@ -80,6 +81,45 @@ CREATE TABLE IF NOT EXISTS public.file_resources (
   date_added TIMESTAMPTZ DEFAULT now()
 );
 
+-- ========================================================
+-- NEW: ACADEMIC GRADING SYSTEM TABLES
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS public.academic_semesters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL, -- e.g. 'Semester 1'
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.academic_units (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  semester_id UUID REFERENCES public.academic_semesters(id) ON DELETE CASCADE,
+  name TEXT NOT NULL, -- e.g. 'Unit 1: Fundamental Sciences I'
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.academic_modules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  unit_id UUID REFERENCES public.academic_units(id) ON DELETE CASCADE,
+  name TEXT NOT NULL, -- e.g. 'Analysis 3'
+  coefficient NUMERIC DEFAULT 1,
+  weight_td NUMERIC DEFAULT 0, -- percentage (0.0 to 1.0)
+  weight_tp NUMERIC DEFAULT 0, -- percentage (0.0 to 1.0)
+  weight_exam NUMERIC DEFAULT 1, -- percentage (0.0 to 1.0)
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.student_grades (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  module_id UUID NOT NULL REFERENCES public.academic_modules(id) ON DELETE CASCADE,
+  td_grade NUMERIC CHECK (td_grade >= 0 AND td_grade <= 20),
+  tp_grade NUMERIC CHECK (tp_grade >= 0 AND tp_grade <= 20),
+  exam_grade NUMERIC CHECK (exam_grade >= 0 AND exam_grade <= 20),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, module_id)
+);
+
 -- 3. HELPER FUNCTIONS
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
@@ -121,6 +161,12 @@ ALTER TABLE public.chat_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.visualizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.file_resources ENABLE ROW LEVEL SECURITY;
 
+-- RLS FOR NEW TABLES
+ALTER TABLE public.academic_semesters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.academic_units ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.academic_modules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_grades ENABLE ROW LEVEL SECURITY;
+
 -- Drop all existing policies before creating to avoid 42710 error
 DROP POLICY IF EXISTS "Self view" ON public.profiles;
 DROP POLICY IF EXISTS "Admin full access" ON public.profiles;
@@ -132,6 +178,15 @@ DROP POLICY IF EXISTS "Viz user isolation" ON public.visualizations;
 DROP POLICY IF EXISTS "Library public read" ON public.file_resources;
 DROP POLICY IF EXISTS "Library admin management" ON public.file_resources;
 
+-- Grades related policies
+DROP POLICY IF EXISTS "Grades structure public read" ON public.academic_semesters;
+DROP POLICY IF EXISTS "Grades structure admin write" ON public.academic_semesters;
+DROP POLICY IF EXISTS "Grades unit public read" ON public.academic_units;
+DROP POLICY IF EXISTS "Grades unit admin write" ON public.academic_units;
+DROP POLICY IF EXISTS "Grades module public read" ON public.academic_modules;
+DROP POLICY IF EXISTS "Grades module admin write" ON public.academic_modules;
+DROP POLICY IF EXISTS "Student grades isolation" ON public.student_grades;
+
 -- Create Policies
 CREATE POLICY "Self view" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Admin full access" ON public.profiles FOR ALL TO authenticated USING (public.is_admin());
@@ -142,3 +197,16 @@ CREATE POLICY "Chat user isolation" ON public.chat_history FOR ALL USING (auth.u
 CREATE POLICY "Viz user isolation" ON public.visualizations FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Library public read" ON public.file_resources FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Library admin management" ON public.file_resources FOR ALL TO authenticated USING (public.is_admin());
+
+-- Academic Structure Policies (Read for all, Admin can manage)
+CREATE POLICY "Grades structure public read" ON public.academic_semesters FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Grades structure admin write" ON public.academic_semesters FOR ALL TO authenticated USING (public.is_admin());
+
+CREATE POLICY "Grades unit public read" ON public.academic_units FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Grades unit admin write" ON public.academic_units FOR ALL TO authenticated USING (public.is_admin());
+
+CREATE POLICY "Grades module public read" ON public.academic_modules FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Grades module admin write" ON public.academic_modules FOR ALL TO authenticated USING (public.is_admin());
+
+-- Student Grades Policies (User can only manage their own grades)
+CREATE POLICY "Student grades isolation" ON public.student_grades FOR ALL TO authenticated USING (auth.uid() = user_id);

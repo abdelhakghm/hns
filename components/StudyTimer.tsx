@@ -11,11 +11,14 @@ interface StudyTimerProps {
   onUpdateItem: (subjectId: string, itemId: string, updates: Partial<StudyItem> & { exercisesDelta?: number }, logEntry?: Omit<StudyLog, 'id'>) => void;
 }
 
-const POMODORO_TIME = 25 * 60;
 const SEGMENTS = 60;
 
 const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
-  const [timeLeft, setTimeLeft] = useState(POMODORO_TIME);
+  const [durationValue, setDurationValue] = useState(25);
+  const [durationUnit, setDurationUnit] = useState<'min' | 'hour'>('min');
+  const [sessionDuration, setSessionDuration] = useState(25 * 60);
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  
   const [isActive, setIsActive] = useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
   const [selectedItemId, setSelectedItemId] = useState<string>('');
@@ -25,6 +28,24 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
   const [showConfig, setShowConfig] = useState(true);
   
   const timerRef = useRef<any>(null);
+
+  const updateSessionTime = (val: number, unit: 'min' | 'hour') => {
+    const seconds = unit === 'hour' ? val * 3600 : val * 60;
+    setSessionDuration(seconds);
+    if (!isActive) {
+      setTimeLeft(seconds);
+    }
+  };
+
+  const handleDurationChange = (val: number) => {
+    setDurationValue(val);
+    updateSessionTime(val, durationUnit);
+  };
+
+  const handleUnitChange = (unit: 'min' | 'hour') => {
+    setDurationUnit(unit);
+    updateSessionTime(durationValue, unit);
+  };
 
   useEffect(() => {
     if (isActive && timeLeft > 0) {
@@ -52,7 +73,7 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
       });
     }
     setShowSummary(false);
-    setTimeLeft(POMODORO_TIME);
+    setTimeLeft(sessionDuration);
     setSolvedInSession(0);
     setSessionNote('Deep work session.');
     setShowConfig(true);
@@ -73,7 +94,7 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
   const projectedSolved = Math.min(totalItems, currentSolved + solvedInSession);
   const projectedPercent = Math.round((projectedSolved / totalItems) * 100);
 
-  const progressPercent = (timeLeft / POMODORO_TIME);
+  const progressPercent = (timeLeft / sessionDuration);
   const activeSegments = Math.ceil(progressPercent * SEGMENTS);
 
   return (
@@ -108,7 +129,26 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
           {/* Config Panel (Minimalist) */}
           {!isActive && showConfig && (
             <div className="w-full max-w-md mb-8 md:mb-12 space-y-4 animate-in slide-in-from-top-4 duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Duration Picker */}
+                <div className="flex gap-2">
+                  <input 
+                    type="number"
+                    value={durationValue}
+                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 1)}
+                    className="flex-1 px-4 py-3.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs font-bold text-white outline-none focus:border-emerald-500 transition-all"
+                    min="1"
+                  />
+                  <select
+                    value={durationUnit}
+                    onChange={(e) => handleUnitChange(e.target.value as 'min' | 'hour')}
+                    className="w-24 px-2 py-3.5 bg-slate-900/60 border border-white/10 rounded-2xl text-[10px] font-bold text-white outline-none focus:border-emerald-500 transition-all"
+                  >
+                    <option value="min">MIN</option>
+                    <option value="hour">HR</option>
+                  </select>
+                </div>
+                
                 <select
                   value={selectedSubjectId}
                   onChange={(e) => { setSelectedSubjectId(e.target.value); setSelectedItemId(''); }}
@@ -117,6 +157,8 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
                   <option value="">Subject Module</option>
                   {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
+              </div>
+              <div className="w-full">
                 <select
                   disabled={!selectedSubjectId}
                   value={selectedItemId}
@@ -186,7 +228,7 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
             {/* Float Menu Actions */}
             <div className="flex items-center justify-center gap-8 md:gap-10 mt-12 md:mt-16 relative z-20">
               <button
-                onClick={() => { setIsActive(false); setTimeLeft(POMODORO_TIME); }}
+                onClick={() => { setIsActive(false); setTimeLeft(sessionDuration); }}
                 className="p-4 md:p-5 rounded-full bg-slate-900 border border-white/5 text-slate-500 hover:text-white hover:border-white/10 transition-all active:scale-90"
               >
                 <RotateCcw size={18} />
@@ -205,7 +247,7 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
 
               <button 
                 onClick={completeSession}
-                className={`p-4 md:p-5 rounded-full bg-slate-900 border border-white/5 text-slate-500 hover:text-red-400 transition-all active:scale-90 ${!isActive && timeLeft === POMODORO_TIME ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                className={`p-4 md:p-5 rounded-full bg-slate-900 border border-white/5 text-slate-500 hover:text-red-400 transition-all active:scale-90 ${!isActive && timeLeft === sessionDuration ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
               >
                 <X size={18} />
               </button>
