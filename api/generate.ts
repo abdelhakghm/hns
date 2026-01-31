@@ -2,7 +2,7 @@
 /**
  * Serverless API Route: /api/generate
  * Securely handles HNS AI inference via OpenRouter.
- * Optimized for speed using meta-llama/llama-3.1-8b-instruct:free.
+ * Enforced Model: openai/gpt-oss-20b:free
  * This implementation is strictly server-side and uses the OPENROUTER_API_KEY.
  */
 export default async function handler(req: Request) {
@@ -27,8 +27,7 @@ export default async function handler(req: Request) {
     }
 
     /**
-     * MODEL SELECTION: Switched to 'meta-llama/llama-3.1-8b-instruct:free'
-     * This model offers extremely low latency (fast processing) compared to 20B+ models.
+     * MODEL ENFORCEMENT: Strictly using 'openai/gpt-oss-20b:free' as the ONLY AI model.
      */
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -39,7 +38,7 @@ export default async function handler(req: Request) {
         "X-Title": "HNS Hub"
       },
       body: JSON.stringify({
-        "model": "meta-llama/llama-3.1-8b-instruct:free",
+        "model": "openai/gpt-oss-20b:free",
         "messages": [
           {
             "role": "system",
@@ -47,7 +46,7 @@ export default async function handler(req: Request) {
             
             IDENTITY PROTOCOL:
             - Name: HNS AI
-            - Core Engine: High-Speed Neural Core (HNS Optimized)
+            - Core Engine: GPT-OSS 20B High-Fidelity Core (HNS Optimized)
             - Institutional Alignment: HNS (Higher School of Renewable Energies)
             
             SCIENTIFIC DOMAIN:
@@ -62,8 +61,8 @@ export default async function handler(req: Request) {
           },
           { "role": "user", "content": prompt }
         ],
-        "temperature": 0.6, // Slightly lower temperature for faster, more focused academic responses
-        "max_tokens": 1000
+        "temperature": 0.7,
+        "max_tokens": 1500
       })
     });
 

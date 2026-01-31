@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase.ts';
 import { 
-  Zap, Lock, Mail, Key, ArrowRight, Loader2, UserPlus, LogIn, User as UserIcon, CheckCircle2, ShieldAlert, AlertTriangle, Globe
+  Zap, Lock, Mail, Key, ArrowRight, Loader2, UserPlus, LogIn, User as UserIcon, CheckCircle2, ShieldAlert, AlertTriangle, Globe, ArrowLeftRight
 } from 'lucide-react';
 import { DOMAIN_RESTRICTION } from '../constants.ts';
 
@@ -16,7 +16,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ message: string; type: 'error' | 'success' | 'warning' } | null>(null);
+  const [error, setError] = useState<{ message: string; type: 'error' | 'success' | 'warning'; showSwitch?: boolean } | null>(null);
 
   const toggleMode = (newMode: 'login' | 'signup') => {
     setMode(newMode);
@@ -78,12 +78,14 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         
         if (signInError) {
           const msg = signInError.message.toLowerCase();
-          /**
-           * SPECIFIC FIX: Addressing the common 'Access Denied' confusion.
-           * We clearly distinguish between a wrong password and a non-existent account.
-           */
           if (msg.includes('invalid login credentials')) {
-            throw new Error("Access Denied: Incorrect email or secret key. If you haven't joined HNS Hub yet, please switch to the 'Join Hub' tab to create your identity first.");
+            setError({ 
+              message: "Access Denied: Incorrect email or secret key. If you haven't joined HNS Hub yet, please create your identity first.", 
+              type: 'error',
+              showSwitch: true
+            });
+            setLoading(false);
+            return;
           } else if (msg.includes('email not confirmed')) {
             throw new Error("Activation Pending: Your account exists but hasn't been verified. Check your institutional inbox for the activation link.");
           }
@@ -182,15 +184,28 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           </div>
 
           {error && (
-            <div className={`p-4 rounded-2xl border flex gap-3 items-start animate-in slide-in-from-top-2 transition-all ${
+            <div className={`p-4 rounded-2xl border flex flex-col gap-3 animate-in slide-in-from-top-2 transition-all ${
               error.type === 'success' ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200' : 
               error.type === 'warning' ? 'bg-amber-950/30 border-amber-500/30 text-amber-200' :
               'bg-red-950/40 border-red-500/30 text-red-200 shadow-[0_0_20px_rgba(239,68,68,0.1)]'
             }`}>
-              {error.type === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-400" />}
-              {error.type === 'warning' && <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-400" />}
-              {error.type === 'error' && <ShieldAlert size={16} className="shrink-0 mt-0.5 text-red-400" />}
-              <p className="text-[11px] font-bold leading-relaxed">{error.message}</p>
+              <div className="flex gap-3 items-start">
+                {error.type === 'success' && <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-emerald-400" />}
+                {error.type === 'warning' && <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-400" />}
+                {error.type === 'error' && <ShieldAlert size={16} className="shrink-0 mt-0.5 text-red-400" />}
+                <p className="text-[11px] font-bold leading-relaxed">{error.message}</p>
+              </div>
+              
+              {error.showSwitch && (
+                <button 
+                  type="button"
+                  onClick={() => toggleMode('signup')}
+                  className="mt-1 flex items-center justify-center gap-2 py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95"
+                >
+                  <ArrowLeftRight size={12} />
+                  Switch to Join Hub
+                </button>
+              )}
             </div>
           )}
 

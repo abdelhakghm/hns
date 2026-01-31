@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Subject, StudyItem, StudyItemType, User } from '../types';
 import { 
@@ -29,8 +30,14 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [newItemTotal, setNewItemTotal] = useState(5);
 
   const allItems = subjects.flatMap(s => s.items);
-  const overallAvg = allItems.length > 0 ? Math.round(allItems.reduce((sum, i) => sum + i.progressPercent, 0) / allItems.length) : 0;
-  const completedCount = allItems.filter(i => i.progressPercent === 100).length;
+  
+  // Progress calculations based on exercises and chapters
+  const totalSolved = allItems.reduce((sum, i) => sum + i.exercisesSolved, 0);
+  const totalPossible = allItems.reduce((sum, i) => sum + i.totalExercises, 0);
+  const overallAvg = totalPossible > 0 ? Math.round((totalSolved / totalPossible) * 100) : 0;
+  
+  const chaptersCompleted = allItems.filter(i => i.type === 'Chapter' && i.progressPercent === 100).length;
+  const totalTasks = allItems.length;
 
   const handleAddSubject = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,17 +113,17 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <div className="text-4xl md:text-5xl font-poppins font-bold text-white flex items-start">
                     {overallAvg}<span className="text-lg mt-1">%</span>
                   </div>
-                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mt-1">Academic Progress</span>
+                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest mt-1">Total Yield</span>
                 </div>
               </div>
 
               <div className="space-y-6 flex-1 text-center md:text-left">
                 <div className="flex flex-wrap justify-center md:justify-start gap-3">
                   <div className="px-4 py-1.5 bg-emerald-950/30 border border-emerald-500/20 rounded-full text-[9px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
-                    <CheckSquare size={12} className="animate-pulse" /> Sync: High
+                    <CheckSquare size={12} className="animate-pulse" /> Exercises: {totalSolved}/{totalPossible}
                   </div>
                   <div className="px-4 py-1.5 bg-slate-900/40 border border-white/5 rounded-full text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <Activity size={12} /> HNS Core
+                    <Activity size={12} /> HNS Registry
                   </div>
                 </div>
                 
@@ -126,12 +133,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                 
                 <div className="grid grid-cols-2 gap-6 max-w-sm mx-auto md:mx-0">
                   <div className="space-y-1">
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Active Modules</p>
-                    <p className="text-2xl md:text-3xl font-bold text-white">{allItems.length}</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Chapters Done</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white">{chaptersCompleted}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Yield Factor</p>
-                    <p className="text-2xl md:text-3xl font-bold text-emerald-500">{completedCount}</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Solved Units</p>
+                    <p className="text-2xl md:text-3xl font-bold text-emerald-500">{totalSolved}</p>
                   </div>
                 </div>
               </div>
@@ -143,7 +150,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="glass-card p-8 rounded-[32px] border border-white/5 flex-1 flex flex-col justify-center text-center lg:text-left">
             <h3 className="font-bold text-white text-lg mb-2">Academic Yield Monitor</h3>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              System calibration complete. HNS Hub is monitoring your academic trajectory. Efficiency currently at {overallAvg}%.
+              System calibrated. Your registry reflects {chaptersCompleted} completed chapters and {totalSolved} solved exercises.
             </p>
           </div>
           <button 

@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase.ts';
 import { User, Subject, StudyItem, FileResource, StudyItemType } from '../types';
 
@@ -108,10 +109,10 @@ export const db = {
     const { data, error } = await supabase
       .from('subjects')
       .insert({ name, category, user_id: userId })
-      .select('id')
-      .single();
+      .select('id');
+    
     if (error) throw error;
-    return data?.id;
+    return data?.[0]?.id;
   },
 
   async deleteSubject(userId: string, id: string) {
@@ -120,38 +121,45 @@ export const db = {
 
   async createItem(userId: string, subjectId: string, item: any) {
     const solved = item.exercisesSolved || 0;
-    const total = item.totalExercises || 1;
-    const percent = Math.round((solved / total) * 100);
+    const total = Math.max(1, item.totalExercises || 1);
+    const calculatedPercent = Math.round((solved / total) * 100);
+    const status = calculatedPercent === 100 ? 'completed' : calculatedPercent > 0 ? 'in-progress' : 'not-started';
 
     const { data, error } = await supabase.from('study_items').insert({
       user_id: userId,
       subject_id: subjectId,
       title: item.title,
       type: item.type,
-      status: item.status,
+      status: status,
       exercises_solved: solved,
-      total_exercises: total,
-      progress_percent: percent
-    }).select('id').single();
-    if (error) throw error;
-    return data?.id;
+      total_exercises: total
+      // Removed progress_percent as it is a generated column in the DB
+    }).select('id');
+
+    if (error) {
+      console.error("Supabase creation error:", error);
+      throw error;
+    }
+    
+    const newId = data?.[0]?.id;
+    if (!newId) throw new Error("Registry entry succeeded but no ID was returned.");
+    
+    return newId;
   },
 
   async updateItem(userId: string, itemId: string, updates: any) {
-    // Correctly map JS properties to SQL columns
     const payload: any = {};
     if (updates.exercisesSolved !== undefined) payload.exercises_solved = updates.exercisesSolved;
-    if (updates.exercises_solved !== undefined) payload.exercises_solved = updates.exercises_solved;
     if (updates.totalExercises !== undefined) payload.total_exercises = updates.totalExercises;
     if (updates.status !== undefined) payload.status = updates.status;
-    if (updates.progressPercent !== undefined) payload.progress_percent = updates.progressPercent;
-    if (updates.progress_percent !== undefined) payload.progress_percent = updates.progress_percent;
+    // Removed progress_percent as it is a generated column in the DB
 
     const { error } = await supabase
       .from('study_items')
       .update(payload)
       .eq('id', itemId)
       .eq('user_id', userId);
+    
     if (error) throw error;
   },
 

@@ -10,7 +10,7 @@ import AdminPanel from './components/AdminPanel.tsx';
 import Auth from './components/Auth.tsx';
 import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types.ts';
 import { db } from './services/dbService.ts';
-import { Waves, Loader2, Zap } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { PRIMARY_ADMIN_EMAIL } from './constants.ts';
 
 const App: React.FC = () => {
@@ -21,7 +21,6 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
 
-  // Listen to Auth State
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -49,7 +48,6 @@ const App: React.FC = () => {
     let profile = null;
     let retries = 0;
     
-    // Attempt to fetch profile with retries to account for trigger lag
     while (!profile && retries < 5) {
       profile = await db.getUserById(supabaseUser.id);
       if (!profile) {
@@ -60,7 +58,6 @@ const App: React.FC = () => {
 
     const isPrimaryAdmin = supabaseUser.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase();
     
-    // CRITICAL: Ensure the Primary Admin is actually an admin in the database
     if (isPrimaryAdmin && profile?.role !== 'admin') {
       try {
         await db.updateProfileRole(supabaseUser.id, 'admin');
@@ -108,8 +105,12 @@ const App: React.FC = () => {
     setIsSyncing(true);
     try {
       const id = await db.createSubject(user.id, name, category);
-      setSubjects(prev => [...prev, { id, name, category, items: [] }]);
-    } catch (e) {}
+      if (id) {
+        setSubjects(prev => [{ id, name, category, items: [] }, ...prev]);
+      }
+    } catch (e) {
+      console.error("Subject creation failed:", e);
+    }
     setIsSyncing(false);
   };
 
@@ -128,11 +129,27 @@ const App: React.FC = () => {
     setIsSyncing(true);
     try {
       const id = await db.createItem(user.id, subjectId, item);
-      setSubjects(prev => prev.map(s => {
-        if (s.id !== subjectId) return s;
-        return { ...s, items: [...s.items, { ...item, id, logs: [], progressPercent: Math.round((item.exercisesSolved/item.totalExercises)*100) }] };
-      }));
-    } catch (e: any) {}
+      if (id) {
+        const solved = item.exercisesSolved || 0;
+        const total = Math.max(1, item.totalExercises || 1);
+        const progressPercent = Math.round((solved / total) * 100);
+        const status = progressPercent === 100 ? 'completed' : progressPercent > 0 ? 'in-progress' : 'not-started';
+        
+        setSubjects(prev => prev.map(s => {
+          if (s.id !== subjectId) return s;
+          const newItem: StudyItem = {
+            ...item,
+            id,
+            status,
+            logs: [],
+            progressPercent
+          };
+          return { ...s, items: [...s.items, newItem] };
+        }));
+      }
+    } catch (e: any) {
+      console.error("Study Unit creation failed in HNS Hub:", e);
+    }
     setIsSyncing(false);
   };
 
@@ -148,95 +165,111 @@ const App: React.FC = () => {
 
   const updateItem = async (subjectId: string, itemId: string, updates: Partial<StudyItem> & { exercisesDelta?: number }, logEntry?: Omit<StudyLog, 'id'>) => {
     if (!user) return;
+    
+    const subject = subjects.find(s => s.id === subjectId);
+    const item = subject?.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    let solved = updates.exercisesSolved !== undefined ? updates.exercisesSolved : item.exercisesSolved;
+    if (updates.exercisesDelta) solved += updates.exercisesDelta;
+    
+    const total = updates.totalExercises !== undefined ? updates.totalExercises : item.totalExercises;
+    solved = Math.max(0, Math.min(solved, total));
+    
+    const percent = Math.round((solved / Math.max(1, total)) * 100);
+    const status = percent === 100 ? 'completed' : percent > 0 ? 'in-progress' : 'not-started';
+
+    const finalUpdate = { 
+      exercisesSolved: solved, 
+      totalExercises: total, 
+      progressPercent: percent, 
+      status 
+    };
+
+    // Optimistic Update
     setSubjects(prev => prev.map(s => {
       if (s.id !== subjectId) return s;
       return {
         ...s,
-        items: s.items.map(i => {
-          if (i.id !== itemId) return i;
-          
-          const newSolved = updates.exercisesDelta !== undefined 
-            ? Math.min(i.totalExercises, Math.max(0, i.exercisesSolved + updates.exercisesDelta))
-            : (updates.exercisesSolved !== undefined ? updates.exercisesSolved : i.exercisesSolved);
-            
-          const newStatus = newSolved === i.totalExercises ? 'completed' : (newSolved > 0 ? 'in-progress' : 'not-started');
-          const newPercent = Math.round((newSolved / i.totalExercises) * 100);
-
-          db.updateItem(user.id, itemId, { 
-            exercises_solved: newSolved, 
-            status: newStatus, 
-            progress_percent: newPercent 
-          });
-
-          if (logEntry) {
-            db.createLog(user.id, itemId, logEntry);
-          }
-
-          return { ...i, ...updates, exercisesSolved: newSolved, status: newStatus, progressPercent: newPercent };
-        })
+        items: s.items.map(i => (i.id === itemId ? { ...i, ...finalUpdate } : i))
       };
     }));
+
+    try {
+      await db.updateItem(user.id, itemId, finalUpdate);
+      if (logEntry) {
+        await db.createLog(user.id, itemId, logEntry);
+      }
+    } catch (e) {
+      console.error("Progress save failed on cloud node:", e);
+      // Re-fetch data on failure to ensure UI consistency
+      loadAppData(user.id);
+    }
   };
 
-  const addFile = async (file: Omit<FileResource, 'id' | 'dateAdded'>) => {
-    const newFile = await db.createFile(file);
-    setFiles(prev => [newFile, ...prev]);
+  const onAddFile = async (file: Omit<FileResource, 'id' | 'dateAdded'>) => {
+    if (user?.role !== 'admin') return;
+    try {
+      const newFile = await db.createFile(file);
+      setFiles(prev => [newFile, ...prev]);
+    } catch (e) {}
   };
 
-  const deleteFile = async (id: string) => {
-    await db.deleteFile(id);
-    setFiles(prev => prev.filter(f => f.id !== id));
+  const onDeleteFile = async (id: string) => {
+    if (user?.role !== 'admin') return;
+    try {
+      await db.deleteFile(id);
+      setFiles(prev => prev.filter(f => f.id !== id));
+    } catch (e) {}
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 text-center">
-        <div className="relative mb-10 animate-float">
-          <div className="w-24 h-24 border-4 border-emerald-500/10 border-t-emerald-500 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Zap className="text-emerald-500" size={36} />
-          </div>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
+        <div className="relative">
+          <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full animate-pulse"></div>
+          <Loader2 className="text-emerald-500 animate-spin relative" size={48} />
         </div>
-        <h1 className="text-3xl font-poppins font-bold text-white uppercase tracking-tighter">HNS Hub</h1>
-        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.5em] animate-pulse mt-4">Establishing HNS Neural Connection</p>
+        <p className="mt-8 text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em] animate-pulse">Initializing HNS Hub</p>
       </div>
     );
   }
 
   if (!user) {
-    return <Auth onAuthSuccess={() => {}} />;
+    return <Auth onAuthSuccess={() => setIsLoading(true)} />;
   }
 
   return (
     <Layout user={user} currentView={currentView} onSetView={setCurrentView} onLogout={handleLogout}>
+      {isSyncing && (
+        <div className="fixed top-8 right-8 z-[200] flex items-center gap-3 bg-emerald-600 px-4 py-2 rounded-xl shadow-lg animate-in fade-in slide-in-from-right-4">
+          <RefreshCw size={14} className="text-white animate-spin" />
+          <span className="text-[10px] font-bold text-white uppercase tracking-widest">HNS Syncing...</span>
+        </div>
+      )}
+
       {currentView === 'dashboard' && (
         <Dashboard 
-          user={user}
+          user={user} 
           subjects={subjects} 
-          onAddSubject={addSubject} 
+          onAddSubject={addSubject}
           onDeleteSubject={deleteSubject}
           onAddItem={addItemToSubject}
           onDeleteItem={deleteItem}
           onUpdateItem={updateItem}
         />
       )}
-      {currentView === 'library' && <Library files={files} subjects={subjects} user={user} />}
-      {currentView === 'focus' && <StudyTimer subjects={subjects} onUpdateItem={updateItem} />}
-      {currentView === 'chat' && <Chatbot user={user} />}
-      {currentView === 'admin' && (
-        <AdminPanel 
-          user={user} 
-          files={files} 
-          onAddFile={addFile} 
-          onDeleteFile={deleteFile} 
-        />
+      {currentView === 'library' && (
+        <Library subjects={subjects} files={files} user={user} />
       )}
-
-      {isSyncing && (
-        <div className="fixed bottom-10 right-10 md:bottom-12 md:right-12 bg-emerald-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-right duration-300 z-[200]">
-          <Loader2 size={18} className="animate-spin" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">HNS Sync</span>
-        </div>
+      {currentView === 'focus' && (
+        <StudyTimer subjects={subjects} onUpdateItem={updateItem} />
+      )}
+      {currentView === 'chat' && (
+        <Chatbot user={user} />
+      )}
+      {currentView === 'admin' && user.role === 'admin' && (
+        <AdminPanel user={user} files={files} onAddFile={onAddFile} onDeleteFile={onDeleteFile} />
       )}
     </Layout>
   );

@@ -2,7 +2,7 @@
 /**
  * HNS Hub AI Service - Client Proxy
  * This service communicates with the secure /api/generate serverless route.
- * The client side NEVER accesses the process.env.API_KEY directly.
+ * Optimized for the HNS Hub Intelligence Core (GPT-OSS 20B).
  */
 
 /**
