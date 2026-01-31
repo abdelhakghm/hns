@@ -77,12 +77,12 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
   const activeSegments = Math.ceil(progressPercent * SEGMENTS);
 
   return (
-    <div className="max-w-4xl mx-auto min-h-[70vh] flex flex-col items-center justify-center space-y-12 pb-24">
+    <div className="max-w-4xl mx-auto min-h-[calc(100vh-14rem)] md:min-h-[70vh] flex flex-col items-center justify-center space-y-8 md:space-y-12">
       {!showSummary ? (
         <div className="w-full flex flex-col items-center animate-in fade-in duration-1000">
           
           {/* Header Status */}
-          <div className={`mb-12 transition-all duration-700 text-center ${isActive ? 'opacity-40 scale-95' : 'opacity-100'}`}>
+          <div className={`mb-8 md:mb-12 transition-all duration-700 text-center ${isActive ? 'opacity-40 scale-95' : 'opacity-100'}`}>
             <h2 className="text-sm font-bold text-emerald-500 uppercase tracking-[0.4em] mb-2 flex items-center justify-center gap-2">
               <Zap size={14} className={isActive ? 'animate-pulse' : ''} />
               {isActive ? 'Deep Work Phase' : 'Liquid Focus Core'}
@@ -98,7 +98,7 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
           {!isActive && (
             <button 
               onClick={() => setShowConfig(!showConfig)}
-              className="mb-8 flex items-center gap-2 px-6 py-2.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-slate-400 hover:text-emerald-400 transition-all active:scale-95"
+              className="mb-6 md:mb-8 flex items-center gap-2 px-6 py-2.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-slate-400 hover:text-emerald-400 transition-all active:scale-95"
             >
               <Settings size={14} />
               {showConfig ? 'Hide Settings' : 'Configure Module'}
@@ -107,7 +107,7 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
 
           {/* Config Panel (Minimalist) */}
           {!isActive && showConfig && (
-            <div className="w-full max-w-md mb-12 space-y-4 animate-in slide-in-from-top-4 duration-500">
+            <div className="w-full max-w-md mb-8 md:mb-12 space-y-4 animate-in slide-in-from-top-4 duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <select
                   value={selectedSubjectId}
@@ -184,47 +184,47 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
             </div>
 
             {/* Float Menu Actions */}
-            <div className="flex items-center justify-center gap-10 mt-16 relative z-20">
+            <div className="flex items-center justify-center gap-8 md:gap-10 mt-12 md:mt-16 relative z-20">
               <button
                 onClick={() => { setIsActive(false); setTimeLeft(POMODORO_TIME); }}
-                className="p-5 rounded-full bg-slate-900 border border-white/5 text-slate-500 hover:text-white hover:border-white/10 transition-all active:scale-90"
+                className="p-4 md:p-5 rounded-full bg-slate-900 border border-white/5 text-slate-500 hover:text-white hover:border-white/10 transition-all active:scale-90"
               >
-                <RotateCcw size={20} />
+                <RotateCcw size={18} />
               </button>
               
               <button
                 onClick={() => setIsActive(!isActive)}
-                className={`p-10 rounded-[40px] transition-all active:scale-95 shadow-2xl ${
+                className={`p-8 md:p-10 rounded-[32px] md:rounded-[40px] transition-all active:scale-95 shadow-2xl ${
                   isActive 
                     ? 'bg-amber-500 text-slate-900 shadow-amber-500/20' 
                     : 'bg-emerald-600 text-white shadow-emerald-600/40 hover:bg-emerald-500'
                 }`}
               >
-                {isActive ? <Pause size={40} fill="currentColor" /> : <Play size={40} className="ml-2" fill="currentColor" />}
+                {isActive ? <Pause size={32} fill="currentColor" /> : <Play size={32} className="ml-1" fill="currentColor" />}
               </button>
 
               <button 
                 onClick={completeSession}
-                className={`p-5 rounded-full bg-slate-900 border border-white/5 text-slate-500 hover:text-red-400 transition-all active:scale-90 ${!isActive && timeLeft === POMODORO_TIME ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+                className={`p-4 md:p-5 rounded-full bg-slate-900 border border-white/5 text-slate-500 hover:text-red-400 transition-all active:scale-90 ${!isActive && timeLeft === POMODORO_TIME ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
           </div>
           
-          <div className="mt-12 text-[10px] font-bold text-slate-800 uppercase tracking-[0.5em] opacity-30">
+          <div className="mt-12 text-[9px] md:text-[10px] font-bold text-slate-800 uppercase tracking-[0.4em] md:tracking-[0.5em] opacity-30">
             Liquid Intelligence focus protocol
           </div>
         </div>
       ) : (
-        <div className="w-full max-w-xl glass-card p-10 md:p-14 rounded-[48px] border-emerald-500/20 shadow-2xl animate-in zoom-in-95 duration-700 relative overflow-hidden">
-           <div className="relative z-10 space-y-10">
-              <div className="flex items-center gap-6">
-                <div className="p-5 bg-emerald-600 rounded-[28px] text-white shadow-xl shadow-emerald-900/40">
-                  <CheckCircle size={36} />
+        <div className="w-full max-w-xl glass-card p-8 md:p-14 rounded-[32px] md:rounded-[48px] border-emerald-500/20 shadow-2xl animate-in zoom-in-95 duration-700 relative overflow-hidden">
+           <div className="relative z-10 space-y-8 md:space-y-10">
+              <div className="flex items-center gap-4 md:gap-6">
+                <div className="p-4 md:p-5 bg-emerald-600 rounded-[24px] md:rounded-[28px] text-white shadow-xl shadow-emerald-900/40">
+                  <CheckCircle size={28} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white tracking-tight">Focus Achieved</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Focus Achieved</h2>
                   <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mt-1">Committing data to registry...</p>
                 </div>
               </div>
@@ -245,7 +245,7 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
                     className="w-full px-6 py-4 bg-slate-900/50 border border-white/10 rounded-2xl text-xl font-bold text-emerald-500 outline-none focus:border-emerald-500"
                   />
                   <p className="text-[9px] text-slate-600 font-bold px-4 uppercase tracking-wider">
-                    Registry will update from {selectedItem?.exercisesSolved || 0} to {projectedSolved} / {totalItems} exercises.
+                    Registry: {selectedItem?.exercisesSolved || 0} → {projectedSolved} / {totalItems}
                   </p>
                 </div>
                 <div className="space-y-2">
