@@ -222,6 +222,34 @@ const GradesCalculator: React.FC<GradesCalculatorProps> = ({ userId }) => {
     return selectedSemester === 1 ? SEMESTER_1_STRUCTURE : SEMESTER_2_STRUCTURE;
   }, [selectedYear, selectedSemester]);
 
+  const yearlyStats = useMemo(() => {
+    const calculateSemesterAvg = (structure: UnitConfig[]) => {
+      let totalWeightedSum = 0;
+      let totalCoefSum = 0;
+      structure.forEach(unit => {
+        unit.subjects.forEach(sub => {
+          const input = grades[sub.id] || {};
+          const td = input.td || 0;
+          const tp = input.tp || 0;
+          const exam = input.exam || 0;
+          const subAvg = (td * sub.weights.td) + (tp * sub.weights.tp) + (exam * sub.weights.exam);
+          totalWeightedSum += subAvg * sub.coef;
+          totalCoefSum += sub.coef;
+        });
+      });
+      return totalWeightedSum / (totalCoefSum || 1);
+    };
+
+    const s1 = calculateSemesterAvg(selectedYear === 1 ? L1_S1_STRUCTURE : SEMESTER_1_STRUCTURE);
+    const s2 = calculateSemesterAvg(selectedYear === 1 ? L1_S2_STRUCTURE : SEMESTER_2_STRUCTURE);
+    
+    return {
+      s1,
+      s2,
+      yearly: (s1 + s2) / 2
+    };
+  }, [grades, selectedYear]);
+
   const results = useMemo(() => {
     let totalWeightedSum = 0;
     let totalCoefSum = 0;
@@ -344,6 +372,29 @@ const GradesCalculator: React.FC<GradesCalculatorProps> = ({ userId }) => {
               Semester {s}
             </button>
           ))}
+        </div>
+
+        {/* Yearly Average Summary */}
+        <div className="flex items-center gap-6 px-6 py-3 bg-slate-900/40 border border-white/5 rounded-2xl backdrop-blur-sm animate-in fade-in slide-in-from-top-2 duration-700">
+          <div className="flex flex-col items-center">
+            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Yearly Yield</span>
+            <div className="flex items-center gap-3">
+              <span className={`text-lg font-mono font-bold ${yearlyStats.yearly >= 10 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                {yearlyStats.yearly.toFixed(2)}
+              </span>
+              <div className="h-4 w-[1px] bg-white/10" />
+              <div className="flex gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[7px] font-bold text-slate-600 uppercase">S1</span>
+                  <span className="text-[10px] font-mono font-bold text-slate-400">{yearlyStats.s1.toFixed(2)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[7px] font-bold text-slate-600 uppercase">S2</span>
+                  <span className="text-[10px] font-mono font-bold text-slate-400">{yearlyStats.s2.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -483,15 +534,6 @@ const GradesCalculator: React.FC<GradesCalculatorProps> = ({ userId }) => {
           </div>
         ))}
       </div>
-
-      {/* Info Footer */}
-      <footer className="glass-card p-6 rounded-[24px] border border-emerald-500/10 opacity-60 flex items-center gap-4">
-        <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl"><Info size={18} /></div>
-        <p className="text-[10px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
-          Final semester averages are calculated and stored persistently in the HNS student registry. 
-          Module-level entries are processed in real-time for yield analysis.
-        </p>
-      </footer>
     </div>
   );
 };
