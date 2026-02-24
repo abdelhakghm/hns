@@ -318,5 +318,28 @@ export const db = {
       .eq('id', taskId)
       .eq('user_id', userId);
     if (error) throw error;
+  },
+
+  // Study Analytics
+  async getStudySessions(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (e) { return []; }
+  },
+
+  async createStudySession(userId: string, subjectId: string | null, durationSeconds: number) {
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .insert({ user_id: userId, subject_id: subjectId, duration_seconds: durationSeconds })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 };

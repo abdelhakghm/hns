@@ -10,11 +10,12 @@ import {
 interface StudyTimerProps {
   subjects: Subject[];
   onUpdateItem: (subjectId: string, itemId: string, updates: Partial<StudyItem> & { exercisesDelta?: number }, logEntry?: Omit<StudyLog, 'id'>) => void;
+  onLogSession: (subjectId: string | null, durationSeconds: number) => void;
 }
 
 const SEGMENTS = 60;
 
-const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
+const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem, onLogSession }) => {
   const [durationValue, setDurationValue] = useState(25);
   const [durationUnit, setDurationUnit] = useState<'min' | 'hour'>('min');
   const [sessionDuration, setSessionDuration] = useState(25 * 60);
@@ -66,6 +67,11 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
   };
 
   const handleLogProgress = () => {
+    const durationSpent = sessionDuration - timeLeft;
+    if (durationSpent > 0) {
+      onLogSession(selectedSubjectId || null, durationSpent);
+    }
+
     if (selectedSubjectId && selectedItemId) {
       onUpdateItem(selectedSubjectId, selectedItemId, { exercisesDelta: solvedInSession }, {
         timestamp: new Date().toISOString(),

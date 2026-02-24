@@ -69,3 +69,24 @@ CREATE POLICY "Users can manage their own todos"
   FOR ALL TO authenticated 
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- ========================================================
+-- HNS HUB: STUDY ANALYTICS
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS public.study_sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  subject_id UUID REFERENCES public.subjects(id) ON DELETE SET NULL,
+  duration_seconds INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.study_sessions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage their own study sessions" ON public.study_sessions;
+CREATE POLICY "Users can manage their own study sessions" 
+  ON public.study_sessions
+  FOR ALL TO authenticated 
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);

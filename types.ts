@@ -54,4 +54,12 @@ export interface Task {
   created_at: string;
 }
 
-export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'admin' | 'grades' | 'todo';
+export interface StudySession {
+  id: string;
+  user_id: string;
+  subject_id: string | null;
+  duration_seconds: number;
+  created_at: string;
+}
+
+export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'admin' | 'grades' | 'todo' | 'analytics';

@@ -11,7 +11,8 @@ import {
   User as UserIcon,
   LogOut,
   Calculator,
-  ListTodo
+  ListTodo,
+  BarChart3
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -27,6 +28,7 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'todo', label: 'Objectives', icon: ListTodo },
     { id: 'grades', label: 'Yield Calc', icon: Calculator },
     { id: 'library', label: 'Library', icon: LibraryIcon },

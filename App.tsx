@@ -9,8 +9,9 @@ import Chatbot from './components/Chatbot.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
 import GradesCalculator from './components/GradesCalculator.tsx';
 import TodoList from './components/TodoList.tsx';
+import AnalyticsDashboard from './components/AnalyticsDashboard.tsx';
 import Auth from './components/Auth.tsx';
-import { User, Subject, FileResource, AppView, StudyItem, StudyLog, StudyStatus, Task } from './types.ts';
+import { User, Subject, FileResource, AppView, StudyItem, StudyLog, StudyStatus, Task, StudySession } from './types.ts';
 import { db } from './services/dbService.ts';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { PRIMARY_ADMIN_EMAIL } from './constants.ts';
@@ -20,6 +21,7 @@ const App: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [files, setFiles] = useState<FileResource[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
@@ -87,14 +89,16 @@ const App: React.FC = () => {
 
   const loadAppData = async (userId: string) => {
     try {
-      const [cloudSubs, cloudFiles, cloudTasks] = await Promise.all([
+      const [cloudSubs, cloudFiles, cloudTasks, cloudSessions] = await Promise.all([
         db.getSubjects(userId),
         db.getFiles(),
-        db.getTasks(userId)
+        db.getTasks(userId),
+        db.getStudySessions(userId)
       ]);
       setSubjects(cloudSubs);
       setFiles(cloudFiles);
       setTasks(cloudTasks);
+      setSessions(cloudSessions);
     } catch (e) {
       console.error("Data load failed:", e);
     }
@@ -273,6 +277,16 @@ const App: React.FC = () => {
     }
   };
 
+  const logSession = async (subjectId: string | null, durationSeconds: number) => {
+    if (!user) return;
+    try {
+      const newSession = await db.createStudySession(user.id, subjectId, durationSeconds);
+      setSessions(prev => [newSession, ...prev]);
+    } catch (e) {
+      console.error("Session logging failed:", e);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
@@ -316,7 +330,10 @@ const App: React.FC = () => {
         <Library subjects={subjects} files={files} user={user} />
       )}
       {currentView === 'focus' && (
-        <StudyTimer subjects={subjects} onUpdateItem={updateItem} />
+        <StudyTimer subjects={subjects} onUpdateItem={updateItem} onLogSession={logSession} />
+      )}
+      {currentView === 'analytics' && (
+        <AnalyticsDashboard sessions={sessions} subjects={subjects} />
       )}
       {currentView === 'chat' && (
         <Chatbot user={user} />
