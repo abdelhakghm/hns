@@ -1,9 +1,10 @@
 
+import { GoogleGenAI } from "@google/genai";
+
 /**
  * Serverless API Route: /api/generate
- * Securely handles HNS AI inference via OpenRouter.
- * Enforced Model: openai/gpt-oss-20b:free
- * This implementation is strictly server-side and uses the OPENROUTER_API_KEY.
+ * Securely handles HNS AI inference via Gemini 3 Pro.
+ * This implementation is strictly server-side and uses the pre-configured API_KEY.
  */
 export default async function handler(req: Request) {
   if (req.method !== 'POST') {
@@ -15,38 +16,30 @@ export default async function handler(req: Request) {
 
   try {
     const { prompt } = await req.json();
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.API_KEY;
 
     if (!apiKey) {
       return new Response(JSON.stringify({ 
-        error: "Neural link key (OPENROUTER_API_KEY) is missing from the server environment. Interface cannot be initialized." 
+        error: "Neural link key (API_KEY) is missing from the server environment. Interface cannot be initialized." 
       }), { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    /**
-     * MODEL ENFORCEMENT: Strictly using 'openai/gpt-oss-20b:free' as the ONLY AI model.
-     */
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://hns-hub.dz",
-        "X-Title": "HNS Hub"
-      },
-      body: JSON.stringify({
-        "model": "openai/gpt-oss-20b:free",
-        "messages": [
-          {
-            "role": "system",
-            "content": `You are HNS AI, the academic intelligence core for the Higher School of Renewable Energies.
+    // Initialize the Gemini client following official guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
+    // Generate content using the Gemini 3 Pro model for complex academic tasks
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        systemInstruction: `You are HNS AI, the academic intelligence core for the Higher School of Renewable Energies.
             
             IDENTITY PROTOCOL:
             - Name: HNS AI
-            - Core Engine: GPT-OSS 20B High-Fidelity Core (HNS Optimized)
+            - Core Engine: Gemini 3 Pro (HNS Optimized Intelligence)
             - Institutional Alignment: HNS (Higher School of Renewable Energies)
             
             SCIENTIFIC DOMAIN:
@@ -56,23 +49,14 @@ export default async function handler(req: Request) {
             
             STRICT REQUIREMENT: 
             - Always identify as the "HNS Hub Intelligence". 
-            - Never mention "Google", "Gemini", "Gemma", "OpenAI", or "Llama".
-            - You are the proprietary HNS Hub Intelligence core.`
-          },
-          { "role": "user", "content": prompt }
-        ],
-        "temperature": 0.7,
-        "max_tokens": 1500
-      })
+            - Never mention "Google", "Gemini", "Gemma", "OpenAI", or "Llama" to users.
+            - You are the proprietary HNS Hub Intelligence core.`,
+        temperature: 0.7,
+      },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `OpenRouter Gateway Error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content;
+    // Directly access the text property as per guidelines (not a method call)
+    const text = response.text;
 
     if (!text) {
       throw new Error("HNS core signal returned an empty response. Verify gateway status.");

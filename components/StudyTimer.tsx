@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Subject, StudyItem, StudyLog } from '../types';
 import { 
   Play, Pause, RotateCcw, CheckCircle, Zap, 
-  Settings, Gauge, Flame, Save, X, ChevronDown, TrendingUp
+  Settings, Gauge, Flame, Save, X, ChevronDown, TrendingUp,
+  Timer, Clock, Activity
 } from 'lucide-react';
 
 interface StudyTimerProps {
@@ -104,13 +105,17 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
           
           {/* Header Status */}
           <div className={`mb-8 md:mb-12 transition-all duration-700 text-center ${isActive ? 'opacity-40 scale-95' : 'opacity-100'}`}>
-            <h2 className="text-sm font-bold text-emerald-500 uppercase tracking-[0.4em] mb-2 flex items-center justify-center gap-2">
-              <Zap size={14} className={isActive ? 'animate-pulse' : ''} />
-              {isActive ? 'Deep Work Phase' : 'Liquid Focus Core'}
+            <h2 className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.5em] mb-3 flex items-center justify-center gap-3">
+              <div className="w-8 h-[1px] bg-emerald-500/30" />
+              <span className="flex items-center gap-2">
+                <Activity size={12} className={isActive ? 'animate-pulse' : ''} />
+                {isActive ? 'Neural Focus Active' : 'System Standby'}
+              </span>
+              <div className="w-8 h-[1px] bg-emerald-500/30" />
             </h2>
             {selectedItem && (
-              <p className="text-white font-medium text-xs opacity-60">
-                Focusing on: {selectedItem.title}
+              <p className="text-white font-medium text-[11px] opacity-40 tracking-wide">
+                Target: {selectedItem.title}
               </p>
             )}
           </div>
@@ -131,18 +136,22 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
             <div className="w-full max-w-md mb-8 md:mb-12 space-y-4 animate-in slide-in-from-top-4 duration-500">
               <div className="grid grid-cols-2 gap-4">
                 {/* Duration Picker */}
-                <div className="flex gap-2">
-                  <input 
-                    type="number"
-                    value={durationValue}
-                    onChange={(e) => handleDurationChange(parseInt(e.target.value) || 1)}
-                    className="flex-1 px-4 py-3.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs font-bold text-white outline-none focus:border-emerald-500 transition-all"
-                    min="1"
-                  />
+                <div className="relative flex gap-2 group/duration">
+                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-4 bg-emerald-500/20 rounded-full group-focus-within/duration:bg-emerald-500 transition-colors" />
+                  <div className="relative flex-1">
+                    <Clock size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                    <input 
+                      type="number"
+                      value={durationValue}
+                      onChange={(e) => handleDurationChange(parseInt(e.target.value) || 1)}
+                      className="w-full pl-10 pr-4 py-3.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs font-bold text-white outline-none focus:border-emerald-500/50 transition-all"
+                      min="1"
+                    />
+                  </div>
                   <select
                     value={durationUnit}
                     onChange={(e) => handleUnitChange(e.target.value as 'min' | 'hour')}
-                    className="w-24 px-2 py-3.5 bg-slate-900/60 border border-white/10 rounded-2xl text-[10px] font-bold text-white outline-none focus:border-emerald-500 transition-all"
+                    className="w-24 px-2 py-3.5 bg-slate-900/60 border border-white/10 rounded-2xl text-[10px] font-bold text-white outline-none focus:border-emerald-500/50 transition-all appearance-none text-center"
                   >
                     <option value="min">MIN</option>
                     <option value="hour">HR</option>
@@ -186,42 +195,57 @@ const StudyTimer: React.FC<StudyTimerProps> = ({ subjects, onUpdateItem }) => {
                   return (
                     <div 
                       key={i}
-                      className="absolute top-1/2 left-1/2 w-full h-1 -translate-y-1/2"
+                      className="absolute top-1/2 left-1/2 w-full h-[1px] -translate-y-1/2"
                       style={{ transform: `translate(-50%, -50%) rotate(${angle}deg)` }}
                     >
                       <div 
-                        className={`h-full w-4 md:w-6 ml-auto rounded-full transition-all duration-500 ${
+                        className={`h-full w-3 md:w-5 ml-auto transition-all duration-700 ${
                           isLit 
-                            ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] opacity-100' 
-                            : 'bg-white/5 opacity-10'
+                            ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)] opacity-100' 
+                            : 'bg-white/5 opacity-20'
                         }`}
-                        style={{ transitionDelay: `${isActive ? i * 5 : 0}ms` }}
+                        style={{ 
+                          transitionDelay: `${isActive ? i * 3 : 0}ms`,
+                          borderRadius: '1px'
+                        }}
                       />
                     </div>
                   );
                 })}
               </div>
 
+              {/* Inner Technical Ring */}
+              <div className="absolute inset-8 border border-white/5 rounded-full pointer-events-none" />
+              <div className="absolute inset-12 border border-dashed border-white/5 rounded-full pointer-events-none animate-[spin_60s_linear_infinite]" />
+
               {/* Central Time Readout */}
-              <div className={`relative z-10 w-[80%] h-[80%] rounded-full flex flex-col items-center justify-center transition-all duration-1000 ${
+              <div className={`relative z-10 w-[85%] h-[85%] rounded-full flex flex-col items-center justify-center transition-all duration-1000 ${
                 isActive ? 'scale-105' : 'scale-100'
               }`}>
-                <span className={`text-7xl md:text-9xl font-poppins font-bold tracking-tighter tabular-nums leading-none transition-colors duration-1000 ${
-                  isActive ? 'text-white drop-shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'text-slate-700'
+                {/* Modern Minutes Icon */}
+                <div className={`mb-4 transition-all duration-1000 ${isActive ? 'opacity-100 scale-110' : 'opacity-20 scale-100'}`}>
+                  <div className="relative">
+                    <Timer size={20} className={isActive ? 'text-emerald-400' : 'text-slate-400'} strokeWidth={1.5} />
+                    {isActive && (
+                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+                    )}
+                  </div>
+                </div>
+
+                <span className={`text-7xl md:text-9xl font-mono font-light tracking-[-0.05em] tabular-nums leading-none transition-all duration-1000 ${
+                  isActive ? 'text-white drop-shadow-[0_0_30px_rgba(16,185,129,0.3)]' : 'text-slate-800'
                 }`}>
                   {formatTime(timeLeft)}
                 </span>
                 
-                {isActive && (
-                   <div className="mt-4 flex flex-col items-center gap-1 animate-pulse">
-                     <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-[0.3em]">Flux Active</span>
-                     <div className="flex gap-0.5">
-                        <div className="w-1 h-1 bg-emerald-500 rounded-full" />
-                        <div className="w-1 h-1 bg-emerald-500/50 rounded-full" />
-                        <div className="w-1 h-1 bg-emerald-500/20 rounded-full" />
-                     </div>
-                   </div>
-                )}
+                <div className={`mt-6 flex flex-col items-center gap-2 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                  <span className="text-[9px] font-bold text-emerald-500/60 uppercase tracking-[0.4em]">Chronos Protocol</span>
+                  <div className="flex gap-1.5">
+                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-bounce" />
+                  </div>
+                </div>
               </div>
             </div>
 

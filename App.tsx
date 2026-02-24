@@ -9,7 +9,7 @@ import Chatbot from './components/Chatbot.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
 import GradesCalculator from './components/GradesCalculator.tsx';
 import Auth from './components/Auth.tsx';
-import { User, Subject, FileResource, AppView, StudyItem, StudyLog } from './types.ts';
+import { User, Subject, FileResource, AppView, StudyItem, StudyLog, StudyStatus } from './types.ts';
 import { db } from './services/dbService.ts';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { PRIMARY_ADMIN_EMAIL } from './constants.ts';
@@ -134,7 +134,8 @@ const App: React.FC = () => {
         const solved = item.exercisesSolved || 0;
         const total = Math.max(1, item.totalExercises || 1);
         const progressPercent = Math.round((solved / total) * 100);
-        const status = progressPercent === 100 ? 'completed' : progressPercent > 0 ? 'in-progress' : 'not-started';
+        // Explicitly type the status to avoid inference as generic string
+        const status: StudyStatus = progressPercent === 100 ? 'completed' : progressPercent > 0 ? 'in-progress' : 'not-started';
         
         setSubjects(prev => prev.map(s => {
           if (s.id !== subjectId) return s;
@@ -178,7 +179,8 @@ const App: React.FC = () => {
     solved = Math.max(0, Math.min(solved, total));
     
     const percent = Math.round((solved / Math.max(1, total)) * 100);
-    const status = percent === 100 ? 'completed' : percent > 0 ? 'in-progress' : 'not-started';
+    // Explicitly type the status to avoid inference as generic string
+    const status: StudyStatus = percent === 100 ? 'completed' : percent > 0 ? 'in-progress' : 'not-started';
 
     const finalUpdate = { 
       exercisesSolved: solved, 
@@ -261,7 +263,7 @@ const App: React.FC = () => {
         />
       )}
       {currentView === 'grades' && (
-        <GradesCalculator />
+        <GradesCalculator userId={user.id} />
       )}
       {currentView === 'library' && (
         <Library subjects={subjects} files={files} user={user} />

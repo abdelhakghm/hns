@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Calculator, 
   TrendingUp, 
@@ -8,8 +8,11 @@ import {
   Award, 
   AlertCircle,
   Zap,
-  Info
+  Info,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
+import { db } from '../services/dbService.ts';
 
 interface GradeInput {
   td?: number;
@@ -86,19 +89,15 @@ const SEMESTER_1_STRUCTURE: UnitConfig[] = [
   }
 ];
 
-const GradesCalculator: React.FC = () => {
-  const [grades, setGrades] = useState<Record<string, GradeInput>>({});
+interface GradesCalculatorProps {
+  userId: string;
+}
 
-  const handleInputChange = (subjectId: string, type: keyof GradeInput, value: string) => {
-    const numValue = value === '' ? undefined : Math.max(0, Math.min(20, parseFloat(value) || 0));
-    setGrades(prev => ({
-      ...prev,
-      [subjectId]: {
-        ...prev[subjectId],
-        [type]: numValue
-      }
-    }));
-  };
+const GradesCalculator: React.FC<GradesCalculatorProps> = ({ userId }) => {
+  const [grades, setGrades] = useState<Record<string, GradeInput>>({});
+  const [isInitialLoading, setIsInitialLoading] = useState(false); // No module grades to load
+  const [isSyncing, setIsSyncing] = useState(false);
+  const semesterDebounceRef = useRef<any>(null);
 
   const results = useMemo(() => {
     let totalWeightedSum = 0;
@@ -123,20 +122,72 @@ const GradesCalculator: React.FC = () => {
         unitCoefSum += sub.coef;
       });
 
-      const unitAvg = unitWeightedSum / unitCoefSum;
+      const unitAvg = unitWeightedSum / (unitCoefSum || 1);
       unitAverages[unit.id] = unitAvg;
 
       totalWeightedSum += unitWeightedSum;
       totalCoefSum += unitCoefSum;
     });
 
-    const semesterAvg = totalWeightedSum / totalCoefSum;
+    const semesterAvg = totalWeightedSum / (totalCoefSum || 1);
 
     return { subjectAverages, unitAverages, semesterAvg };
   }, [grades]);
 
+  // Handle Semester Average Persistence ONLY
+  useEffect(() => {
+    if (isInitialLoading) return;
+
+    if (semesterDebounceRef.current) clearTimeout(semesterDebounceRef.current);
+    
+    semesterDebounceRef.current = setTimeout(async () => {
+      if (!isNaN(results.semesterAvg) && results.semesterAvg > 0) {
+        setIsSyncing(true);
+        try {
+          await db.saveSemesterAverage(userId, 'Semester 1', results.semesterAvg);
+        } catch (e) {
+          console.error("Failed to persist semester average:", e);
+        } finally {
+          setIsSyncing(false);
+        }
+      }
+    }, 1500);
+
+    return () => clearTimeout(semesterDebounceRef.current);
+  }, [results.semesterAvg, userId, isInitialLoading]);
+
+  const handleInputChange = (subjectId: string, type: keyof GradeInput, value: string) => {
+    const numValue = value === '' ? undefined : Math.max(0, Math.min(20, parseFloat(value) || 0));
+    
+    setGrades(prev => ({
+      ...prev,
+      [subjectId]: {
+        ...prev[subjectId],
+        [type]: numValue
+      }
+    }));
+  };
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-in fade-in duration-700">
+        <div className="relative">
+          <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full animate-pulse"></div>
+          <Loader2 className="text-emerald-500 animate-spin relative" size={48} />
+        </div>
+        <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.4em] animate-pulse">Retrieving Academic Yield Data</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 md:space-y-12 pb-24 animate-in fade-in duration-700">
+      {/* Sync Indicator */}
+      <div className={`fixed top-8 right-8 z-[200] flex items-center gap-3 bg-emerald-600 px-4 py-2 rounded-xl shadow-lg transition-all duration-300 ${isSyncing ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+        <RefreshCw size={14} className="text-white animate-spin" />
+        <span className="text-[10px] font-bold text-white uppercase tracking-widest">Saving Yield...</span>
+      </div>
+
       {/* Yield Hero Card */}
       <section className="glass-card rounded-[40px] p-8 md:p-12 relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12 pointer-events-none">
@@ -182,7 +233,7 @@ const GradesCalculator: React.FC = () => {
             </h2>
             
             <p className="text-sm text-slate-500 max-w-lg leading-relaxed font-medium">
-              Calculate your institutional weighted average for Semester 1. Ensure all TD, TP, and Exam grades are strictly between 0 and 20.
+              Institutional weighted average monitoring. Final averages are persistent and linked to your student ID.
             </p>
           </div>
         </div>
@@ -236,7 +287,8 @@ const GradesCalculator: React.FC = () => {
                           type="number"
                           value={grades[sub.id]?.td ?? ''}
                           onChange={(e) => handleInputChange(sub.id, 'td', e.target.value)}
-                          placeholder="00.00"
+                          placeholder="0.00"
+                          step="0.01"
                           className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-400 outline-none focus:border-emerald-500 transition-all text-center"
                         />
                       </div>
@@ -248,7 +300,8 @@ const GradesCalculator: React.FC = () => {
                           type="number"
                           value={grades[sub.id]?.tp ?? ''}
                           onChange={(e) => handleInputChange(sub.id, 'tp', e.target.value)}
-                          placeholder="00.00"
+                          placeholder="0.00"
+                          step="0.01"
                           className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-400 outline-none focus:border-emerald-500 transition-all text-center"
                         />
                       </div>
@@ -259,7 +312,8 @@ const GradesCalculator: React.FC = () => {
                         type="number"
                         value={grades[sub.id]?.exam ?? ''}
                         onChange={(e) => handleInputChange(sub.id, 'exam', e.target.value)}
-                        placeholder="00.00"
+                        placeholder="0.00"
+                        step="0.01"
                         className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-emerald-400 outline-none focus:border-emerald-500 transition-all text-center"
                       />
                     </div>
@@ -275,8 +329,8 @@ const GradesCalculator: React.FC = () => {
       <footer className="glass-card p-6 rounded-[24px] border border-emerald-500/10 opacity-60 flex items-center gap-4">
         <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl"><Info size={18} /></div>
         <p className="text-[10px] text-slate-400 font-medium leading-relaxed uppercase tracking-wider">
-          Semester average calculation protocol based on the HNS Higher School of Renewable Energies curriculum standards. 
-          Total coefficient sum applied: 30.
+          Final semester averages are calculated and stored persistently in the HNS student registry. 
+          Module-level entries are processed in real-time for yield analysis.
         </p>
       </footer>
     </div>

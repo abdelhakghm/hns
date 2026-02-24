@@ -133,7 +133,6 @@ export const db = {
       status: status,
       exercises_solved: solved,
       total_exercises: total
-      // Removed progress_percent as it is a generated column in the DB
     }).select('id');
 
     if (error) {
@@ -152,7 +151,6 @@ export const db = {
     if (updates.exercisesSolved !== undefined) payload.exercises_solved = updates.exercisesSolved;
     if (updates.totalExercises !== undefined) payload.total_exercises = updates.totalExercises;
     if (updates.status !== undefined) payload.status = updates.status;
-    // Removed progress_percent as it is a generated column in the DB
 
     const { error } = await supabase
       .from('study_items')
@@ -165,6 +163,32 @@ export const db = {
 
   async deleteItem(userId: string, itemId: string) {
     await supabase.from('study_items').delete().eq('id', itemId).eq('user_id', userId);
+  },
+
+  // Semester Averages Persistence
+  async saveSemesterAverage(userId: string, semesterName: string, average: number) {
+    const { error } = await supabase
+      .from('student_grades')
+      .upsert({
+        user_id: userId,
+        semester_name: semesterName,
+        average: average,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id, semester_name' });
+    
+    if (error) throw error;
+  },
+
+  async getSemesterAverage(userId: string, semesterName: string): Promise<number | null> {
+    const { data, error } = await supabase
+      .from('student_grades')
+      .select('average')
+      .eq('user_id', userId)
+      .eq('semester_name', semesterName)
+      .maybeSingle();
+    
+    if (error) return null;
+    return data?.average || null;
   },
 
   async getFiles(): Promise<FileResource[]> {

@@ -2,7 +2,7 @@
 /**
  * HNS Hub AI Service - Client Proxy
  * This service communicates with the secure /api/generate serverless route.
- * Optimized for the HNS Hub Intelligence Core (GPT-OSS 20B).
+ * Optimized for the HNS Hub Intelligence Core (Gemini 3 Pro).
  */
 
 /**
