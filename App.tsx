@@ -8,8 +8,9 @@ import StudyTimer from './components/StudyTimer.tsx';
 import Chatbot from './components/Chatbot.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
 import GradesCalculator from './components/GradesCalculator.tsx';
+import TodoList from './components/TodoList.tsx';
 import Auth from './components/Auth.tsx';
-import { User, Subject, FileResource, AppView, StudyItem, StudyLog, StudyStatus } from './types.ts';
+import { User, Subject, FileResource, AppView, StudyItem, StudyLog, StudyStatus, Task } from './types.ts';
 import { db } from './services/dbService.ts';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { PRIMARY_ADMIN_EMAIL } from './constants.ts';
@@ -18,6 +19,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [files, setFiles] = useState<FileResource[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
@@ -85,12 +87,14 @@ const App: React.FC = () => {
 
   const loadAppData = async (userId: string) => {
     try {
-      const [cloudSubs, cloudFiles] = await Promise.all([
+      const [cloudSubs, cloudFiles, cloudTasks] = await Promise.all([
         db.getSubjects(userId),
-        db.getFiles()
+        db.getFiles(),
+        db.getTasks(userId)
       ]);
       setSubjects(cloudSubs);
       setFiles(cloudFiles);
+      setTasks(cloudTasks);
     } catch (e) {
       console.error("Data load failed:", e);
     }
@@ -226,6 +230,49 @@ const App: React.FC = () => {
     } catch (e) {}
   };
 
+  const addTask = async (title: string) => {
+    if (!user) return;
+    setIsSyncing(true);
+    try {
+      const newTask = await db.createTask(user.id, title);
+      setTasks(prev => [newTask, ...prev]);
+    } catch (e) {}
+    setIsSyncing(false);
+  };
+
+  const toggleTask = async (id: string, completed: boolean) => {
+    if (!user) return;
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, completed } : t));
+    try {
+      await db.updateTask(user.id, id, { completed });
+    } catch (e) {
+      loadAppData(user.id);
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    if (!user) return;
+    // Optimistic update
+    setTasks(prev => prev.filter(t => t.id !== id));
+    try {
+      await db.deleteTask(user.id, id);
+    } catch (e) {
+      loadAppData(user.id);
+    }
+  };
+
+  const editTask = async (id: string, title: string) => {
+    if (!user) return;
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, title } : t));
+    try {
+      await db.updateTask(user.id, id, { title });
+    } catch (e) {
+      loadAppData(user.id);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6">
@@ -273,6 +320,15 @@ const App: React.FC = () => {
       )}
       {currentView === 'chat' && (
         <Chatbot user={user} />
+      )}
+      {currentView === 'todo' && (
+        <TodoList 
+          tasks={tasks} 
+          onAddTask={addTask} 
+          onToggleTask={toggleTask} 
+          onDeleteTask={deleteTask} 
+          onEditTask={editTask} 
+        />
       )}
       {currentView === 'admin' && user.role === 'admin' && (
         <AdminPanel user={user} files={files} onAddFile={onAddFile} onDeleteFile={onDeleteFile} />

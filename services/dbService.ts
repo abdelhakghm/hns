@@ -277,5 +277,46 @@ export const db = {
         .order('created_at', { ascending: true });
       return data || [];
     } catch (e) { return []; }
+  },
+
+  // To-Do List Management
+  async getTasks(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (e) { return []; }
+  },
+
+  async createTask(userId: string, title: string) {
+    const { data, error } = await supabase
+      .from('todos')
+      .insert({ user_id: userId, title, completed: false })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateTask(userId: string, taskId: string, updates: any) {
+    const { error } = await supabase
+      .from('todos')
+      .update(updates)
+      .eq('id', taskId)
+      .eq('user_id', userId);
+    if (error) throw error;
+  },
+
+  async deleteTask(userId: string, taskId: string) {
+    const { error } = await supabase
+      .from('todos')
+      .delete()
+      .eq('id', taskId)
+      .eq('user_id', userId);
+    if (error) throw error;
   }
 };

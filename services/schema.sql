@@ -48,3 +48,24 @@ BEGIN
         CREATE POLICY "Grades module public read" ON public.academic_modules FOR SELECT TO authenticated USING (true);
     END IF;
 END $$;
+
+-- ========================================================
+-- HNS HUB: TO-DO LIST (MISSION REGISTRY)
+-- ========================================================
+
+CREATE TABLE IF NOT EXISTS public.todos (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  completed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.todos ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage their own todos" ON public.todos;
+CREATE POLICY "Users can manage their own todos" 
+  ON public.todos
+  FOR ALL TO authenticated 
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);

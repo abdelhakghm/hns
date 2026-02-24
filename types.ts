@@ -46,4 +46,12 @@ export interface FileResource {
   fileName?: string;
 }
 
-export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'admin' | 'grades';
+export interface Task {
+  id: string;
+  user_id: string;
+  title: string;
+  completed: boolean;
+  created_at: string;
+}
+
+export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'admin' | 'grades' | 'todo';
