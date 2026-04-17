@@ -1,6 +1,6 @@
 
 -- ========================================================
--- HNS HUB: SEMESTER YIELD PERSISTENCE
+-- HNS HUB: SEMESTER AVERAGE PERSISTENCE
 -- ========================================================
 
 -- 1. FINAL SEMESTER AVERAGES TABLE

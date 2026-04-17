@@ -2,43 +2,28 @@
 import React from 'react';
 import { User, AppView } from '../types';
 import { 
-  LayoutDashboard, 
   Library as LibraryIcon, 
   Timer, 
-  MessageSquare, 
   Zap,
-  ShieldCheck,
-  User as UserIcon,
-  LogOut,
   Calculator,
   ListTodo,
-  BarChart3
 } from 'lucide-react';
 
 interface LayoutProps {
-  user: User | null;
+  user: User;
   currentView: AppView;
   onSetView: (view: AppView) => void;
-  onLogout: () => void;
   children: React.ReactNode;
 }
 
-const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogout, children }) => {
-  if (!user) return null;
+const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, children }) => {
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'todo', label: 'Objectives', icon: ListTodo },
-    { id: 'grades', label: 'Yield Calc', icon: Calculator },
+    { id: 'grades', label: 'Average Calc', icon: Calculator },
     { id: 'library', label: 'Library', icon: LibraryIcon },
     { id: 'focus', label: 'Focus Timer', icon: Timer },
-    { id: 'chat', label: 'HNS AI', icon: Zap },
   ];
-
-  if (user.role === 'admin') {
-    navItems.push({ id: 'admin', label: 'Admin', icon: ShieldCheck });
-  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen text-slate-200">
@@ -78,39 +63,34 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
           })}
         </nav>
 
-        <div className="mt-auto pt-8 border-t border-white/5 space-y-4">
+        <div className="mt-auto pt-8 border-t border-white/5">
           <div className="px-4 py-3 bg-slate-900/50 rounded-2xl border border-white/5 flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] font-bold text-white truncate">{user.email || user.name}</p>
-              <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest mt-0.5">{user.role}</p>
+              <p className="text-[10px] font-bold text-white truncate">{user.name}</p>
+              <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest mt-0.5">Academic Guest</p>
             </div>
           </div>
-          
-          <button 
-            onClick={onLogout}
-            className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all font-bold group"
-          >
-            <LogOut size={18} />
-            <span className="text-sm">Sign Out</span>
-          </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 p-4 md:p-10 lg:p-12 mb-24 md:mb-0">
-        <header className="flex md:hidden items-center justify-between mb-8 px-2 pt-safe-top">
+      <main className="flex-1 md:ml-72 p-4 md:p-10 lg:p-12 mb-32 md:mb-0">
+        <header className="flex md:hidden items-center justify-between mb-8 px-2 pt-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-600 rounded-xl">
-               <Zap size={18} className="text-white" />
+            <div className="p-2.5 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-900/40">
+               <Zap size={20} className="text-white" />
             </div>
-            <h1 className="font-poppins font-bold text-lg text-white">HNS Hub</h1>
+            <div>
+              <h1 className="font-poppins font-bold text-lg text-white leading-none">HNS Hub</h1>
+              <p className="text-[7px] font-bold text-emerald-500 uppercase tracking-widest mt-1">Institutional Core</p>
+            </div>
           </div>
-          <button onClick={onLogout} className="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-red-500 active:scale-90 transition-all">
-             <LogOut size={18} />
-          </button>
+          <div className="w-10 h-10 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-[10px] font-bold text-emerald-500">
+             {user.name.charAt(0).toUpperCase()}
+          </div>
         </header>
 
         <div className="max-w-6xl mx-auto">
@@ -118,8 +98,9 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
         </div>
       </main>
 
-      {/* Mobile Glass Dock */}
-      <nav className="md:hidden fixed bottom-6 left-6 right-6 glass-dock rounded-[28px] px-8 py-4 flex justify-between items-center z-[100]">
+      {/* Mobile Glass Dock - Improved Visibility and Touch Targets */}
+      <nav className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] glass-dock rounded-[32px] px-2 py-2 flex justify-between items-center z-[100] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden">
+        <div className="absolute inset-0 bg-emerald-500/5 backdrop-blur-2xl -z-10" />
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -127,13 +108,16 @@ const AppLayout: React.FC<LayoutProps> = ({ user, currentView, onSetView, onLogo
             <button
               key={item.id}
               onClick={() => onSetView(item.id as AppView)}
-              className={`flex flex-col items-center justify-center transition-all duration-300 relative ${
-                isActive ? 'text-emerald-400 -translate-y-1 scale-110' : 'text-slate-500'
+              className={`flex-1 flex flex-col items-center justify-center py-3.5 transition-all duration-300 relative rounded-2xl ${
+                isActive ? 'text-emerald-400' : 'text-slate-500 active:scale-90 active:bg-white/5'
               }`}
             >
-              <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              <Icon size={isActive ? 20 : 18} strokeWidth={isActive ? 2.5 : 2} />
+              <span className={`text-[8px] font-bold uppercase tracking-tight mt-1.5 transition-all ${isActive ? 'opacity-100' : 'opacity-0 scale-75'}`}>
+                {item.label.split(' ')[0]}
+              </span>
               {isActive && (
-                <span className="absolute -bottom-2 w-1 h-1 bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(16,185,129,1)]" />
+                <div className="absolute top-0 inset-x-2 h-1 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.8)]" />
               )}
             </button>
           );

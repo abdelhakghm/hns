@@ -53,7 +53,7 @@ const Library: React.FC<LibraryProps> = ({ files }) => {
             </div>
           </div>
           <p className="text-slate-400 text-sm max-w-xl leading-relaxed">
-            Access the centralized HNS repository. High-yield educational assets synchronized for the Higher School of Renewable Energies.
+            Access the centralized HNS repository. High-quality educational assets synchronized for the Higher School of Renewable Energies.
           </p>
         </div>
 

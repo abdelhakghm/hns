@@ -1,10 +1,7 @@
 
 export interface User {
   id: string;
-  email?: string;
   name: string;
-  role: 'student' | 'admin';
-  is_primary_admin?: boolean;
 }
 
 export type StudyItemType = 'Chapter' | 'TD' | 'TP';
@@ -62,4 +59,4 @@ export interface StudySession {
   created_at: string;
 }
 
-export type AppView = 'dashboard' | 'library' | 'focus' | 'chat' | 'admin' | 'grades' | 'todo' | 'analytics';
+export type AppView = 'library' | 'focus' | 'grades' | 'todo';

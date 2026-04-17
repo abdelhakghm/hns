@@ -1,112 +1,48 @@
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from './services/supabase.ts';
+import React, { useState } from 'react';
 import Layout from './components/Layout.tsx';
-import Dashboard from './components/Dashboard.tsx';
 import Library from './components/Library.tsx';
 import StudyTimer from './components/StudyTimer.tsx';
-import Chatbot from './components/Chatbot.tsx';
-import AdminPanel from './components/AdminPanel.tsx';
 import GradesCalculator from './components/GradesCalculator.tsx';
 import TodoList from './components/TodoList.tsx';
-import AnalyticsDashboard from './components/AnalyticsDashboard.tsx';
-import Auth from './components/Auth.tsx';
 import { User, Subject, FileResource, AppView, StudyItem, StudyLog, StudyStatus, Task, StudySession } from './types.ts';
 import { db } from './services/dbService.ts';
 import { Loader2, RefreshCw } from 'lucide-react';
-import { PRIMARY_ADMIN_EMAIL } from './constants.ts';
+
+const GUEST_USER: User = {
+  id: 'guest_scholar',
+  name: 'Scholar'
+};
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user] = useState<User>(GUEST_USER);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [files, setFiles] = useState<FileResource[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [currentView, setCurrentView] = useState<AppView>('dashboard');
+  const [currentView, setCurrentView] = useState<AppView>('todo');
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        handleUserSession(session.user);
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        handleUserSession(session.user);
-      } else {
-        setUser(null);
-        setSubjects([]);
-        setFiles([]);
-        setIsLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+  React.useEffect(() => {
+    loadAppData(user.id).finally(() => setIsLoading(false));
   }, []);
-
-  const handleUserSession = async (supabaseUser: any) => {
-    let profile = null;
-    let retries = 0;
-    
-    while (!profile && retries < 5) {
-      profile = await db.getUserById(supabaseUser.id);
-      if (!profile) {
-        await new Promise(r => setTimeout(r, 1000));
-        retries++;
-      }
-    }
-
-    const isPrimaryAdmin = supabaseUser.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase();
-    
-    if (isPrimaryAdmin && profile?.role !== 'admin') {
-      try {
-        await db.updateProfileRole(supabaseUser.id, 'admin');
-        profile = await db.getUserById(supabaseUser.id);
-      } catch (e) {
-        console.error("Critical: Failed to sync primary admin role.", e);
-      }
-    }
-
-    const role = (isPrimaryAdmin || profile?.role === 'admin') ? 'admin' : 'student';
-
-    const formattedUser: User = {
-      id: supabaseUser.id,
-      email: supabaseUser.email,
-      name: profile?.full_name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'Scholar',
-      role: role as 'admin' | 'student',
-      is_primary_admin: isPrimaryAdmin
-    };
-    
-    setUser(formattedUser);
-    await loadAppData(formattedUser.id);
-    setIsLoading(false);
-  };
 
   const loadAppData = async (userId: string) => {
     try {
-      const [cloudSubs, cloudFiles, cloudTasks, cloudSessions] = await Promise.all([
+      const [subjects, files, tasks, studySessions] = await Promise.all([
         db.getSubjects(userId),
         db.getFiles(),
         db.getTasks(userId),
         db.getStudySessions(userId)
       ]);
-      setSubjects(cloudSubs);
-      setFiles(cloudFiles);
-      setTasks(cloudTasks);
-      setSessions(cloudSessions);
+      setSubjects(subjects);
+      setFiles(files);
+      setTasks(tasks);
+      setSessions(studySessions);
     } catch (e) {
-      console.error("Data load failed:", e);
+      console.error("Local data load failed:", e);
     }
-  };
-
-  const handleLogout = async () => {
-    setIsLoading(true);
-    await supabase.auth.signOut();
   };
 
   const addSubject = async (name: string, category: string) => {
@@ -219,7 +155,6 @@ const App: React.FC = () => {
   };
 
   const onAddFile = async (file: Omit<FileResource, 'id' | 'dateAdded'>) => {
-    if (user?.role !== 'admin') return;
     try {
       const newFile = await db.createFile(file);
       setFiles(prev => [newFile, ...prev]);
@@ -227,7 +162,6 @@ const App: React.FC = () => {
   };
 
   const onDeleteFile = async (id: string) => {
-    if (user?.role !== 'admin') return;
     try {
       await db.deleteFile(id);
       setFiles(prev => prev.filter(f => f.id !== id));
@@ -299,12 +233,8 @@ const App: React.FC = () => {
     );
   }
 
-  if (!user) {
-    return <Auth onAuthSuccess={() => setIsLoading(true)} />;
-  }
-
   return (
-    <Layout user={user} currentView={currentView} onSetView={setCurrentView} onLogout={handleLogout}>
+    <Layout user={user} currentView={currentView} onSetView={setCurrentView}>
       {isSyncing && (
         <div className="fixed top-8 right-8 z-[200] flex items-center gap-3 bg-emerald-600 px-4 py-2 rounded-xl shadow-lg animate-in fade-in slide-in-from-right-4">
           <RefreshCw size={14} className="text-white animate-spin" />
@@ -312,17 +242,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {currentView === 'dashboard' && (
-        <Dashboard 
-          user={user} 
-          subjects={subjects} 
-          onAddSubject={addSubject}
-          onDeleteSubject={deleteSubject}
-          onAddItem={addItemToSubject}
-          onDeleteItem={deleteItem}
-          onUpdateItem={updateItem}
-        />
-      )}
       {currentView === 'grades' && (
         <GradesCalculator userId={user.id} />
       )}
@@ -332,12 +251,6 @@ const App: React.FC = () => {
       {currentView === 'focus' && (
         <StudyTimer subjects={subjects} onUpdateItem={updateItem} onLogSession={logSession} />
       )}
-      {currentView === 'analytics' && (
-        <AnalyticsDashboard sessions={sessions} subjects={subjects} />
-      )}
-      {currentView === 'chat' && (
-        <Chatbot user={user} />
-      )}
       {currentView === 'todo' && (
         <TodoList 
           tasks={tasks} 
@@ -346,9 +259,6 @@ const App: React.FC = () => {
           onDeleteTask={deleteTask} 
           onEditTask={editTask} 
         />
-      )}
-      {currentView === 'admin' && user.role === 'admin' && (
-        <AdminPanel user={user} files={files} onAddFile={onAddFile} onDeleteFile={onDeleteFile} />
       )}
     </Layout>
   );
