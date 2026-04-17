@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calculator, 
   TrendingUp, 
@@ -213,7 +214,12 @@ const GradesCalculator: React.FC<GradesCalculatorProps> = ({ userId }) => {
   const [grades, setGrades] = useState<Record<string, GradeInput>>({});
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState<{success: boolean, message: string} | null>(null);
   const semesterDebounceRef = useRef<any>(null);
+
+  useEffect(() => {
+    db.testConnection().then(setCloudStatus);
+  }, []);
 
   const currentStructure = useMemo(() => {
     if (selectedYear === 1) {
@@ -295,7 +301,7 @@ const GradesCalculator: React.FC<GradesCalculatorProps> = ({ userId }) => {
       if (!isNaN(results.semesterAvg) && results.semesterAvg > 0) {
         setIsSyncing(true);
         try {
-          const semesterKey = `L${selectedYear} S${selectedSemester}`;
+          const semesterKey = `L${selectedYear}-S${selectedSemester}`;
           await db.saveSemesterAverage(userId, semesterKey, results.semesterAvg);
         } catch (e) {
           console.error("Failed to persist semester average:", e);
@@ -335,9 +341,22 @@ const GradesCalculator: React.FC<GradesCalculatorProps> = ({ userId }) => {
   return (
     <div className="space-y-8 md:space-y-12 pb-24 animate-in fade-in duration-1000">
       {/* Sync Indicator */}
-      <div className={`fixed top-8 right-8 z-[200] flex items-center gap-3 bg-slate-900 border border-emerald-500/30 px-4 py-2 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all duration-300 ${isSyncing ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-        <span className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-widest">Committing Flux...</span>
+      <div className="fixed top-8 right-8 z-[200] flex flex-col items-end gap-2">
+        <div className={`flex items-center gap-3 bg-slate-900 border border-emerald-500/30 px-4 py-2 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all duration-300 ${isSyncing ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+          <span className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-widest">Committing Flux...</span>
+        </div>
+        
+        {cloudStatus && (
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-[7px] font-mono font-bold uppercase tracking-[0.2em] backdrop-blur-md transition-all duration-500 ${
+            cloudStatus.success 
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500/60' 
+              : 'bg-red-500/10 border-red-500/20 text-red-500/60'
+          }`}>
+            <div className={`w-1 h-1 rounded-full ${cloudStatus.success ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`} />
+            {cloudStatus.message}
+          </div>
+        )}
       </div>
 
       {/* Command Deck (Year/Semester & Aggregates) */}
@@ -507,16 +526,40 @@ const GradesCalculator: React.FC<GradesCalculatorProps> = ({ userId }) => {
               </div>
 
               <div className={`mt-8 md:mt-12 flex flex-col items-center gap-2 md:gap-3 transition-all duration-1000 ${
-                results.semesterAvg >= 10 ? 'text-emerald-400' : 'text-slate-500'
+                results.semesterAvg >= 10 ? 'text-emerald-400' : 'text-red-500'
               }`}>
                 <div className="flex items-center gap-3 md:gap-4">
                   <div className="h-px w-4 md:w-6 bg-current opacity-20" />
-                  <div className="flex items-center gap-2 md:gap-3">
-                    {results.semesterAvg >= 10 ? <Award size={14} className="animate-pulse" /> : <AlertCircle size={14} />}
-                    <span className="text-[9px] md:text-[11px] font-sans font-bold uppercase tracking-[0.4em] md:tracking-[0.5em] whitespace-nowrap">
-                      {results.semesterAvg >= 10 ? 'Elite Performance' : 'Standard Baseline'}
-                    </span>
-                  </div>
+                  <AnimatePresence mode="wait">
+                    <motion.div 
+                      key={results.semesterAvg >= 10 ? 'success' : 'alert'}
+                      initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                      animate={{ 
+                        opacity: 1, 
+                        y: 0, 
+                        scale: 1,
+                        x: results.semesterAvg < 10 ? [0, -4, 4, -4, 4, 0] : 0
+                      }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ 
+                        duration: 0.4, 
+                        ease: "easeOut",
+                        x: results.semesterAvg < 10 ? { duration: 0.5, times: [0, 0.2, 0.4, 0.6, 0.8, 1] } : {}
+                      }}
+                      className="flex items-center gap-2 md:gap-3"
+                    >
+                      {results.semesterAvg >= 10 ? (
+                        <Award size={14} className="animate-pulse" />
+                      ) : (
+                        <AlertCircle size={14} className="animate-bounce" />
+                      )}
+                      <span className={`text-[9px] md:text-[11px] font-sans font-bold uppercase tracking-[0.4em] md:tracking-[0.5em] whitespace-nowrap ${
+                        results.semesterAvg >= 10 ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                      }`}>
+                        {results.semesterAvg >= 10 ? 'Congratulations!' : 'Zyrr ro7k!'}
+                      </span>
+                    </motion.div>
+                  </AnimatePresence>
                   <div className="h-px w-4 md:w-6 bg-current opacity-20" />
                 </div>
                 
