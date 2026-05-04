@@ -174,7 +174,7 @@ const SEMESTER_2_STRUCTURE: UnitConfig[] = [
     subjects: [
       { id: 'analysis4', name: 'Mathematical Analysis 4', coef: 3, hasTD: true, hasTP: false, weights: { td: 0.5, tp: 0, exam: 0.5 } },
       { id: 'num_analysis2', name: 'Numerical Analysis 2', coef: 3, hasTD: true, hasTP: false, weights: { td: 0.5, tp: 0, exam: 0.5 } },
-      { id: 'physics4', name: 'Physics 4', coef: 4, hasTD: true, hasTP: true, weights: { td: 0.25, tp: 0.25, exam: 0.5 } },
+      { id: 'physics4', name: 'Physics 4', coef: 4, hasTD: true, hasTP: false, weights: { td: 0.5, tp: 0, exam: 0.5 } },
       { id: 'chemistry4', name: 'Chemistry 4', coef: 3, hasTD: true, hasTP: true, weights: { td: 0.25, tp: 0.25, exam: 0.5 } },
       { id: 'rational_mech2', name: 'Rational Mechanics 2', coef: 3, hasTD: true, hasTP: false, weights: { td: 0.5, tp: 0, exam: 0.5 } },
       { id: 'gen_electricity2', name: 'General Electricity 2', coef: 3, hasTD: true, hasTP: true, weights: { td: 0.25, tp: 0.25, exam: 0.5 } },
