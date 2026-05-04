@@ -1,6 +1,6 @@
 {
-  "name": "HNS Hub",
-  "description": "A comprehensive academic management and focus application for students of the Higher School of Energies (HNS), featuring progress tracking, focus timers, and an AI-powered educational assistant.",
+  "name": "Academic Matrix",
+  "description": "A high-performance institutional grade engine for HNS scholars. Features precise weighted average calculations and academic index tracking.",
   "requestFramePermissions": [
     "geolocation"
   ]

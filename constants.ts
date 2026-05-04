@@ -1,6 +1,4 @@
 
-import { Subject, FileResource } from './types';
-
 export const DOMAIN_RESTRICTION = '@hns-re2sd.dz';
 export const PRIMARY_ADMIN_EMAIL = 'hakoguehmam@gmail.com';
 
@@ -20,6 +18,3 @@ export const APP_LOGO_URL = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
   <path d='M50 20 V25 M65 35 H60 M50 50 V45 M35 35 H40' stroke='%2310b981' stroke-width='3' stroke-linecap='round'/>
   <path d='M70 75 Q85 60 70 45' fill='none' stroke='%2310b981' stroke-width='4' stroke-linecap='round' opacity='0.5'/>
 </svg>`.replace(/#/g, '%23');
-
-export const INITIAL_SUBJECTS: Subject[] = [];
-export const INITIAL_FILES: FileResource[] = [];
