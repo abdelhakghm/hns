@@ -178,7 +178,7 @@ const SEMESTER_2_STRUCTURE: UnitConfig[] = [
       { id: 'chemistry4', name: 'Chemistry 4', coef: 3, hasTD: true, hasTP: true, weights: { td: 0.25, tp: 0.25, exam: 0.5 } },
       { id: 'rational_mech2', name: 'Rational Mechanics 2', coef: 3, hasTD: true, hasTP: false, weights: { td: 0.5, tp: 0, exam: 0.5 } },
       { id: 'gen_electricity2', name: 'General Electricity 2', coef: 3, hasTD: true, hasTP: true, weights: { td: 0.25, tp: 0.25, exam: 0.5 } },
-      { id: 'rom', name: 'Resistance of Materials', coef: 3, hasTD: true, hasTP: false, weights: { td: 0.5, tp: 0, exam: 0.5 } },
+      { id: 'rom', name: 'Resistance of Materials', coef: 3, hasTD: true, hasTP: true, weights: { td: 0.25, tp: 0.25, exam: 0.5 } },
     ]
   },
   {
